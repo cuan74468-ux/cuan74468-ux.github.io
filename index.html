@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14213f">
+<meta name="description" content="Ferry, pelaku usaha Bakso Len di Lubuklinggau dan Curup, membuat aplikasi kasir dan stok sendiri dengan bantuan AI. Proyek, catatan lapangan, dan buku gratis.">
+<meta property="og:title" content="FERRY — Tukang Bakso yang Terus Belajar">
+<meta property="og:description" content="Aplikasi kasir dan stok buatan pelaku usaha Bakso Len, lengkap dengan catatan kesalahan dan batasnya.">
+<meta property="og:type" content="website">
+<title>FERRY — Tukang Bakso yang Terus Belajar</title>
+<link rel="icon" href="logo-ferry.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+
+    :root{color-scheme:dark;--bg:#14213f;--surface:#1b2b4a;--surface2:#263858;--alt:#182747;--text:#fcfaf4;--muted:#d3d9e3;--accent:#e5b63e;--accent-strong:#f2cb67;--line:#52617c;--header:rgba(20,33,63,.97);--image-bg:#101b32;--button-text:#18243b;--pastel-lavender:#ded2f6;--pastel-yellow:#f8e5a8;--pastel-mint:#bcead2;--pastel-blue:#c6e6f3;--pastel-pink:#f4c9df;--pastel-peach:#f7d6bf;--pastel-text:#19253e;--max:1200px}
+    :root[data-theme="light"]{color-scheme:light;--bg:#faf8f2;--surface:#ffffff;--surface2:#f2eee5;--alt:#f4f1e9;--text:#19253e;--muted:#3f4b5e;--accent:#c18b18;--accent-strong:#a06e08;--line:#c8c5bc;--header:rgba(250,248,242,.97);--image-bg:#e9e7e1;--button-text:#17233b}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",sans-serif;font-size:18px;line-height:1.8}button,input,select,textarea{font-family:"Plus Jakarta Sans",sans-serif;font-size:inherit}button{cursor:pointer}a{color:inherit}img{display:block;max-width:100%}:focus-visible{outline:3px solid var(--accent-strong);outline-offset:4px}::selection{background:var(--accent);color:var(--button-text)}
+    .wrap{width:min(var(--max),calc(100% - 64px));margin-inline:auto}.skip{position:absolute;left:-9999px;top:8px;z-index:200;background:var(--accent);color:var(--button-text);padding:12px 20px}.skip:focus{left:8px}
+    .site-header{position:sticky;top:0;z-index:100;background:var(--header);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.header-inner{min-height:88px;display:flex;align-items:center;gap:22px}.brand{font-size:25px;letter-spacing:-.06em;font-weight:800;text-decoration:none;line-height:1;display:inline-flex;align-items:center;gap:11px;white-space:nowrap;flex-shrink:0}.brand-logo{width:36px;height:36px;aspect-ratio:1;object-fit:cover;flex:none;border-radius:3px}.nav-links{display:flex;align-items:center;gap:3px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}.nav-links a{text-decoration:none;font-size:14px;font-weight:700;color:var(--muted);white-space:nowrap;padding:11px 8px;border-radius:4px;line-height:1.35}.nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface2)}.nav-links a.active{box-shadow:inset 0 -3px var(--accent)}.header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}.theme-toggle,.menu-toggle{min-height:48px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:5px;padding:9px 14px;font-size:15px;font-weight:700;line-height:1.3}.theme-toggle:hover,.menu-toggle:hover{border-color:var(--accent)}.menu-toggle{display:none}
+    main>section{display:none;min-height:calc(100vh - 190px)}main>section.is-active{display:block;animation:page-in .3s ease both}@keyframes page-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .hero{padding:clamp(64px,8vw,115px) 0 clamp(72px,9vw,125px);border-bottom:1px solid var(--line)}.hero-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:clamp(35px,6vw,95px);align-items:center}.eyebrow,.section-no,.mini-label{font:600 15px/1.6 "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-strong)}.eyebrow{margin:0 0 24px}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(76px,12vw,168px);letter-spacing:-.095em;line-height:.95;margin:0 0 34px;font-weight:800}h2{font-size:clamp(36px,4.6vw,62px);letter-spacing:-.06em;line-height:1.17;margin:0 0 30px;font-weight:700;max-width:850px}h3{font-size:24px;letter-spacing:-.035em;line-height:1.35;margin:0 0 13px}p{color:var(--muted)}.hero-subtitle{font-size:clamp(25px,2.7vw,36px);font-weight:700;line-height:1.35;letter-spacing:-.045em;color:var(--text);max-width:680px;margin:0 0 25px}.hero-intro{max-width:650px;font-size:19px;line-height:1.85;margin:0 0 15px}.profile-frame{margin:0;background:var(--surface);border:1px solid var(--line);padding:12px;max-width:430px;justify-self:end;width:100%}.profile-frame img{width:100%;height:auto;aspect-ratio:549/309;object-fit:contain;object-position:center;background:var(--image-bg)}.profile-frame figcaption{font-size:15px;line-height:1.5;color:var(--muted);padding:12px 6px 3px}.actions{display:flex;gap:13px;flex-wrap:wrap;margin-top:34px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:13px 22px;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--text);font-size:16px;font-weight:700;line-height:1.45;text-decoration:none;text-align:center;transition:background .2s,border-color .2s}.btn:hover{border-color:var(--accent);background:var(--surface)}.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--button-text)}.btn.primary:hover{background:var(--accent-strong)}
+    .section{padding:clamp(72px,8vw,115px) 0;border-bottom:1px solid var(--line)}.section.alt{background:var(--alt)}.section-grid{display:grid;grid-template-columns:210px minmax(0,1fr);gap:clamp(35px,5vw,85px)}.section-no{margin:10px 0 30px}.section-body{max-width:900px}.lead{font-size:clamp(20px,2vw,24px);color:var(--text);line-height:1.7;max-width:760px}.prose{max-width:760px}.prose p,.prose li{font-size:18px;line-height:1.85;margin-bottom:20px}.rule{border:0;border-top:1px solid var(--line);margin:48px 0}.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;margin:48px 0}.step{border-top:2px solid var(--accent);padding-top:20px}.step-num{font:600 15px "JetBrains Mono",monospace;color:var(--accent-strong);display:block;margin-bottom:18px}.step h3{font-size:21px}.step p{font-size:17px;line-height:1.75;margin-bottom:0}.tool-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.tool-list span,.tag{display:inline-flex;border:1px solid var(--line);color:var(--text);font:500 15px/1.5 "JetBrains Mono",monospace;padding:9px 13px}
+    .project-header{display:flex;align-items:end;justify-content:space-between;gap:28px;flex-wrap:wrap;margin-bottom:34px}.project-header h2{margin-bottom:0}.filters{display:flex;flex-wrap:wrap;gap:9px}.filters button{background:var(--surface);color:var(--text);border:1px solid var(--line);padding:11px 17px;min-height:50px;font-size:15px;font-weight:700;border-radius:4px}.filters button:hover{border-color:var(--accent)}.filters button[aria-pressed="true"]{background:var(--accent);color:var(--button-text);border-color:var(--accent)}.project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.project-card{background:var(--surface);border:1px solid var(--line);min-width:0;display:flex;flex-direction:column}.project-card[hidden]{display:none}.project-image-button{display:flex;align-items:center;justify-content:center;width:100%;height:310px;background:var(--image-bg);border:0;border-bottom:1px solid var(--line);padding:18px}.project-image-button:hover{filter:brightness(1.08)}.project-image-button img{width:100%;height:100%;object-fit:contain}.project-copy{padding:28px;display:flex;flex:1;flex-direction:column}.project-copy .mini-label{margin:0 0 16px}.project-copy p:not(.mini-label){font-size:18px;line-height:1.75;margin-bottom:19px}.project-copy .text-link{margin-top:auto}.status{display:inline-block;align-self:flex-start;background:var(--surface2);border-left:3px solid var(--accent);padding:5px 11px;margin:4px 0 20px;font-size:15px;font-weight:700;color:var(--text)}.text-link{font-size:17px;font-weight:700;color:var(--text);text-decoration:none;border-bottom:2px solid var(--accent);padding:5px 0;align-self:flex-start}.text-link:hover{color:var(--accent-strong)}.gallery-note{font-size:17px;margin-top:24px}
+    .philosophy-grid,.initiative-grid,.journal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:40px}.simple-card{border:1px solid var(--line);padding:30px;background:var(--surface)}.simple-card .mini-label{display:block;margin-bottom:22px}.simple-card p{font-size:18px;line-height:1.75;margin-bottom:0}.journal-grid{gap:22px;align-items:stretch}.journal-card{border:1px solid var(--line);background:var(--surface);padding:clamp(24px,3vw,38px);display:flex;flex-direction:column;min-width:0}.journal-card .mini-label{display:block;margin-bottom:18px}.journal-card h3{font-size:clamp(24px,2.3vw,30px);line-height:1.35;margin-bottom:14px}.journal-card p:not(.mini-label){font-size:19px;line-height:1.8;margin-bottom:28px}.journal-card .journal-read{margin-top:auto;align-self:stretch;min-height:60px;font-size:18px}#journal-title{font-size:clamp(34px,4vw,54px);letter-spacing:-.045em;overflow-wrap:anywhere}#journal-dialog{width:min(800px,calc(100% - 24px));max-height:min(90vh,900px);overflow:auto;padding:clamp(22px,4vw,48px);border-color:var(--line);line-height:1.8}#journal-dialog .journal-dialog-head{display:flex;justify-content:space-between;align-items:start;gap:20px;margin-bottom:28px}#journal-dialog-close{border:1px solid var(--line);background:var(--surface2);color:var(--text);min-height:52px;padding:10px 18px;border-radius:4px;font-weight:700;flex:none}.journal-detail[hidden]{display:none}.journal-detail h2{font-size:clamp(30px,4vw,48px);margin-bottom:14px}.journal-detail .journal-subtitle{font-size:clamp(19px,2vw,23px);color:var(--text);font-weight:600;line-height:1.55;margin-bottom:32px}.journal-detail p:not(.journal-subtitle){font-size:clamp(18px,1.7vw,20px);line-height:1.9;margin-bottom:25px;max-width:68ch}
+    .manifesto-quote{font-size:clamp(24px,3vw,35px);letter-spacing:-.035em;line-height:1.55;color:var(--text);max-width:760px}.contact-layout{display:grid;grid-template-columns:1fr 1fr;gap:55px;align-items:end}.contact-links{display:flex;gap:13px;flex-wrap:wrap}.contact-detail{display:block;font-size:17px;color:var(--muted);margin-top:24px;overflow-wrap:anywhere}.site-footer{padding:45px 0}.footer-inner{display:flex;justify-content:space-between;gap:25px;flex-wrap:wrap;align-items:end}.footer-inner strong{display:block;font-size:24px;letter-spacing:-.05em}.footer-inner p{font-size:16px;margin:5px 0 0}.copyright{font:500 15px/1.6 "JetBrains Mono",monospace;color:var(--muted)}
+    dialog{width:min(950px,calc(100% - 24px));max-height:94vh;background:var(--surface);border:1px solid var(--line);color:var(--text);padding:18px}dialog::backdrop{background:rgba(0,0,0,.82)}.lightbox-head,.lightbox-controls{display:flex;align-items:center;justify-content:space-between;gap:15px}.lightbox-head{margin-bottom:15px}.lightbox-head strong{font-size:20px}.lightbox-head button,.lightbox-controls button{background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:11px 16px;min-height:48px;font-size:16px;font-weight:700}.lightbox-image{width:100%;max-height:65vh;object-fit:contain;background:var(--image-bg)}.lightbox-controls{margin-top:14px}
+    /* One editorial navy-and-gold language across routes and dialogs. Pastels carry dark ink only. */
+    .hero-grid>div:first-child:before{content:"";display:block;width:56px;height:4px;background:var(--accent);margin-bottom:34px}
+    .brand{color:var(--text)}.nav-links a:hover{color:var(--text);background:var(--surface2)}.nav-links a.active{color:var(--accent-strong);background:var(--surface2)}
+    .site-footer{border-top:1px solid var(--line);background:var(--alt)}
+    .project-card,.journal-card,.simple-card{transition:border-color .2s,transform .2s}.project-card:hover,.journal-card:hover,.simple-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+    .project-card:nth-child(6n+1){border-top:5px solid var(--pastel-lavender)}.project-card:nth-child(6n+2){border-top:5px solid var(--pastel-yellow)}.project-card:nth-child(6n+3){border-top:5px solid var(--pastel-mint)}.project-card:nth-child(6n+4){border-top:5px solid var(--pastel-blue)}.project-card:nth-child(6n+5){border-top:5px solid var(--pastel-peach)}
+    .journal-card:nth-child(6n+1){border-top:5px solid var(--pastel-lavender)}.journal-card:nth-child(6n+2){border-top:5px solid var(--pastel-yellow)}.journal-card:nth-child(6n+3){border-top:5px solid var(--pastel-mint)}.journal-card:nth-child(6n+4){border-top:5px solid var(--pastel-blue)}.journal-card:nth-child(6n+5){border-top:5px solid var(--pastel-pink)}.journal-card:nth-child(6n){border-top:5px solid var(--pastel-peach)}
+    .simple-card:nth-child(4n+1){border-top:4px solid var(--pastel-mint)}.simple-card:nth-child(4n+2){border-top:4px solid var(--pastel-lavender)}.simple-card:nth-child(4n+3){border-top:4px solid var(--pastel-blue)}.simple-card:nth-child(4n){border-top:4px solid var(--pastel-peach)}
+    .project-card .mini-label,.journal-card .mini-label,.simple-card .mini-label{align-self:flex-start;padding:3px 10px;background:var(--pastel-lavender);color:var(--pastel-text);font-size:13px}.project-card:nth-child(6n+2) .mini-label,.journal-card:nth-child(6n+2) .mini-label{background:var(--pastel-yellow)}.project-card:nth-child(6n+3) .mini-label,.journal-card:nth-child(6n+3) .mini-label{background:var(--pastel-mint)}.project-card:nth-child(6n+4) .mini-label,.journal-card:nth-child(6n+4) .mini-label{background:var(--pastel-blue)}.project-card:nth-child(6n+5) .mini-label,.journal-card:nth-child(6n+5) .mini-label{background:var(--pastel-pink)}.journal-card:nth-child(6n) .mini-label{background:var(--pastel-peach)}
+    :root[data-theme="light"] .nav-links a.active{color:#76500a;background:#f7edcf}:root[data-theme="light"] .eyebrow,:root[data-theme="light"] .section-no,:root[data-theme="light"] .step-num,:root[data-theme="light"] .mini-label{color:#79550d}
+    :root[data-theme="light"] .project-card .mini-label,:root[data-theme="light"] .journal-card .mini-label,:root[data-theme="light"] .simple-card .mini-label{color:var(--pastel-text)}
+    :root[data-theme="light"] .btn.primary,:root[data-theme="light"] .filters button[aria-pressed="true"],:root[data-theme="light"] .skip{background:#e5b63e;border-color:#e5b63e;color:#18243b}:root[data-theme="light"] .btn.primary:hover{background:#f2cb67}
+    .text-link:hover{color:var(--accent-strong)}:root[data-theme="light"] .text-link:hover{color:#79550d}
+    dialog::backdrop{background:rgba(8,15,33,.86)}.lightbox-head button:hover,.lightbox-controls button:hover,#journal-dialog-close:hover{border-color:var(--accent);background:var(--alt)}
+    @media(max-width:1150px){.menu-toggle{display:block}.nav-links{display:none;position:absolute;left:0;right:0;top:100%;padding:16px max(24px,calc((100vw - var(--max))/2)) 25px;background:var(--bg);border-bottom:1px solid var(--line);flex-direction:column;align-items:stretch;max-height:calc(100vh - 88px);overflow:auto;flex-wrap:nowrap}.nav-links.open{display:flex}.nav-links a{font-size:18px;padding:12px 15px;white-space:normal}.header-actions{margin-left:auto}}
+    @media(max-width:800px){.hero-grid{grid-template-columns:minmax(0,1fr) minmax(200px,.65fr);gap:32px}.section-grid{grid-template-columns:1fr;gap:8px}.section-no{margin:0 0 17px}.contact-layout{grid-template-columns:1fr;gap:22px}}
+    @media(max-width:650px){.wrap{width:calc(100% - 36px)}.header-inner{min-height:76px}.brand{font-size:21px}.brand-logo{width:31px;height:31px}.theme-toggle,.menu-toggle{font-size:14px;padding:9px 10px}.nav-links{max-height:calc(100vh - 76px)}.hero{padding:62px 0 72px}.hero-grid{grid-template-columns:1fr}h1{font-size:clamp(72px,20vw,115px);margin-bottom:26px}.profile-frame{justify-self:start;max-width:350px}.section{padding:68px 0}.project-grid,.philosophy-grid,.initiative-grid,.journal-grid{grid-template-columns:1fr}.project-image-button{height:270px}.steps{grid-template-columns:1fr 1fr;gap:25px}.footer-inner{display:block}.copyright{display:block;margin-top:25px}}
+    @media(max-width:420px){.steps{grid-template-columns:1fr}.theme-toggle{max-width:130px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}main>section.is-active{animation:none}}
+  
+    .stack{font:500 14px/1.6 "JetBrains Mono",monospace;color:var(--muted);margin:-4px 0 18px}
+    .book-card{margin-top:36px}
+    .book-card .text-link{display:inline-block;margin-top:22px}
+    .book-card p{max-width:680px}
+    .project-img-missing{display:none}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Lewati ke konten</a>
+<header class="site-header">
+ <div class="wrap header-inner">
+  <a id="brand" class="brand" href="#home" aria-label="FERRY — Beranda"><img id="brand-logo" class="brand-logo" src="logo-ferry.jpg" alt="Logo monogram FERRY berwarna perak"><span>FERRY.</span></a>
+  <nav id="nav-links" class="nav-links" aria-label="Navigasi utama"><a href="#home">Beranda</a><a href="#about">Tentang Saya</a><a href="#projects">Proyek</a><a href="#how-i-work">Cara Kerja</a><a href="#journal">Catatan Lapangan</a><a href="#community">Buku &amp; Komunitas</a><a href="#contact">Kontak</a></nav>
+  <div class="header-actions">
+   <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Aktifkan mode terang" aria-pressed="false">☀ Mode terang</button><button id="menu-toggle" class="menu-toggle" type="button" aria-controls="nav-links" aria-expanded="false">Menu</button>
+  </div>
+ </div>
+</header>
+
+<main id="main">
+
+<!-- BERANDA -->
+<section id="home" class="hero is-active" aria-labelledby="home-title">
+ <div class="wrap hero-grid">
+  <div>
+   <p class="eyebrow">Bakso Len · Lubuklinggau &amp; Curup</p>
+   <h1 id="home-title">FERRY</h1>
+   <p class="hero-subtitle">Saya tukang bakso yang belajar membangun alat digital karena bertemu masalah usaha setiap hari.</p>
+   <p class="hero-intro">Sejak 2008 saya mengelola Bakso Len. Saya melihat langsung staf mencatat transaksi sambil melayani pembeli, dan dari situ saya mulai bertanya apa yang bisa dibantu alat digital. Sekarang POS buatan saya dipakai staf di cabang Curup setiap hari, sudah sekitar enam bulan, dan aplikasi stok saya pakai sendiri.</p>
+   <p class="hero-intro">Saya belajar dari nol dengan bantuan AI: mencoba, membaca hasilnya, lalu memperbaiki yang keliru. Saya mengerjakannya sendirian, hampir setiap hari 8 sampai 10 jam, selama tujuh sampai delapan bulan terakhir. Hasilnya lima proyek, belum satu pun yang sempurna, dan banyak kesalahan yang saya catat di halaman ini.</p>
+   <div class="actions">
+    <a class="btn primary" href="#projects">Lihat proyek ↗</a><a class="btn" href="#journal">Baca catatan lapangan</a><a class="btn" href="#community">Unduh buku gratis</a>
+   </div>
+  </div>
+  <figure class="profile-frame">
+   <img id="profile-photo" src="foto-ferry.jpg" alt="Ferry mengenakan pakaian kerja kuliner merah muda dan menyiapkan makanan di meja, dengan tulisan tentang memasak dan pemasaran digital di latar" loading="lazy">
+   <figcaption>Ferry · Pelaku usaha dan pembelajar yang terus mencoba.</figcaption>
+  </figure>
+ </div>
+</section>
+
+<!-- TENTANG -->
+<section id="about" class="section" aria-labelledby="about-title">
+ <div class="wrap section-grid">
+  <p class="section-no">01 / Tentang Saya</p>
+  <div class="section-body">
+   <h2 id="about-title">Berangkat dari warung, bukan perusahaan software.</h2>
+   <div class="prose">
+    <p class="lead">Saya tidak berlatar belakang teknologi. Sejak 2008 saya mengelola Bakso Len, usaha kuliner di Lubuklinggau dan Curup.</p>
+    <p>Kebutuhannya dekat sekali: pencatatan kasir di cabang Curup dan pencatatan persediaan. Staf bekerja sambil melayani orang, mencatat transaksi, dan menghadapi kendala sehari-hari. Dari situ saya mulai mencari alat yang cocok untuk pekerjaan mereka.</p>
+    <p>Saya bukan programmer dan tidak mengaku ahli. Yang saya lakukan: menjelaskan masalah kepada AI dengan bahasa sehari-hari, membaca kode yang dihasilkan sebisa saya, mencobanya di layar yang sebenarnya, lalu memperbaiki. Gemini dan Claude menjadi teman diskusi utama. Awalnya lewat Google AI Studio dan Gemini Canvas, dari situ kebiasaan ini bertahan sampai sekarang. Saya tidak punya tim dan tidak punya anggaran, jadi semua belajar dan praktik saya jalankan dengan layanan gratis.</p>
+    <p>Staf kasir hanya menjalankan pekerjaan harian. Mereka tidak mengubah data atau pengaturan. Kalau ada kendala, mereka melapor kepada saya dan saya yang memperbaikinya. Sejauh ini belum pernah ada laporan kendala pada POS di Curup, hanya masa adaptasi di awal. Itu belum berarti aman, dan setiap kesalahan tetap berakhir di meja saya, jadi saya hati-hati menyebut apa yang sudah teruji.</p>
+   </div>
+   <hr class="rule">
+   <p class="manifesto-quote">“Saya mungkin bukan programmer, tetapi saya bertanggung jawab atas apa yang saya pilih untuk dibuat, diuji, dan saya akui belum selesai.”</p>
+  </div>
+ </div>
+</section>
+
+<!-- PROYEK -->
+<section id="projects" class="section alt" aria-labelledby="projects-title">
+ <div class="wrap">
+  <div class="project-header">
+   <div>
+    <p class="section-no">02 / Proyek</p>
+    <h2 id="projects-title">Yang saya buat, dan sejauh mana sudah teruji.</h2>
+    <p class="lead">Satu aplikasi dipakai staf setiap hari, satu saya pakai sendiri, dan tiga lainnya masih percobaan atau belum dipakai orang banyak. Saya mengerjakan semuanya sendirian dan bergantian, karena kalau terlalu lama di satu proyek saya jenuh. Saya tidak menyebut satu pun sebagai produk jadi: keamanan, pemulihan data, dan kemampuan pada skala besar belum saya uji tuntas. Klik gambar untuk melihat tangkapan layar.</p>
+   </div>
+   <div id="project-filters" class="filters" role="group" aria-label="Filter proyek">
+    <button type="button" data-filter="all" aria-pressed="true">Semua</button><button type="button" data-filter="pos" aria-pressed="false">Kasir</button><button type="button" data-filter="platform" aria-pressed="false">Platform</button><button type="button" data-filter="stok" aria-pressed="false">Stok</button>
+   </div>
+  </div>
+  <div class="project-grid" id="project-grid">
+
+   <article id="project-umkm-juara-pos" class="project-card" data-category="pos">
+    <button class="project-image-button" type="button" data-lightbox="0" aria-label="Lihat tangkapan layar UMKM Juara POS"><img src="proyek-umkm-juara-pos.jpg" alt="Tampilan UMKM Juara POS dengan menu bakso dan keranjang transaksi" loading="lazy"></button>
+    <div class="project-copy">
+     <p class="mini-label">01 / Kasir</p>
+     <h3>UMKM Juara POS</h3><span class="status">Dipakai staf, ± 6 bulan</span>
+     <p><strong>Masalah.</strong> Kasir di cabang Curup mencatat transaksi di tengah pekerjaan harian, jadi alurnya harus ringkas.</p>
+     <p><strong>Yang saya buat.</strong> POS untuk alur transaksi kasir: memilih menu, varian dan catatan pesanan, makan di tempat, bungkus atau antar, lalu pembayaran. Dirancang multi-tenant seperti layanan SaaS, jadi satu aplikasi bisa melayani beberapa usaha dengan data yang terpisah.</p>
+     <p><strong>Batasnya.</strong> Fiturnya berlebihan untuk kebutuhan kasir, dan itu pelajaran utamanya. Karena multi-tenant, saya sedang mengaudit menyeluruh agar data satu usaha tidak bocor ke usaha lain. Audit itu belum selesai, dan uji pemulihan data serta hak akses juga belum saya lakukan. Belum pernah ada laporan kendala dari staf, hanya adaptasi di awal.</p>
+     <a class="text-link" href="https://umkm-juara-pos.vercel.app/" target="_blank" rel="noopener noreferrer">Buka proyek ↗</a>
+    </div>
+   </article>
+
+   <article id="project-pos-sederhana" class="project-card" data-category="pos">
+    <button class="project-image-button" type="button" data-lightbox="1" aria-label="Lihat tangkapan layar POS Sederhana Bakso Len"><img src="proyek-pos-sederhana.jpg" alt="Halaman POS Sederhana Bakso Len dengan penjelasan kasir yang tetap siap saat koneksi tidak stabil" loading="lazy"></button>
+    <div class="project-copy">
+     <p class="mini-label">02 / Kasir sederhana</p>
+     <h3>POS Sederhana Bakso Len</h3><span class="status">Percobaan</span>
+     <p><strong>Masalah.</strong> Usaha kuliner membutuhkan kasir yang ringkas dan tetap bisa dipakai saat koneksi internet tidak stabil.</p>
+     <p><strong>Yang saya buat.</strong> Kasir dengan pendekatan offline-first: dirancang supaya tetap jalan ketika internet putus, dengan data usaha yang juga dipisahkan per pengguna (multi-tenant). Pernah saya buat sekaligus sebagai aplikasi desktop dan PWA di browser. Versi desktopnya sudah saya buang.</p>
+     <p><strong>Batasnya.</strong> Terlalu banyak rekayasa untuk kebutuhan sederhana. Saya memangkas 86 berkas dan membuang seluruh folder aplikasi desktop, dan sekarang saya sebut hampir aman, belum aman. Audit pemisahan data antar pengguna masih berjalan, dan ketahanan tanpa koneksi belum saya uji pada semua keadaan. Statusnya tidak sama dengan POS UMKM Juara yang dipakai staf Curup.</p>
+     <a class="text-link" href="https://pos-sederhana-bakso-len.vercel.app/" target="_blank" rel="noopener noreferrer">Buka proyek ↗</a>
+    </div>
+   </article>
+
+   <article id="project-lensgo" class="project-card" data-category="platform">
+    <button class="project-image-button" type="button" data-lightbox="2" aria-label="Lihat tangkapan layar LensGo"><img src="proyek-lensgo.jpg" alt="Beranda LensGo dengan kategori belanja, promosi, dan pilihan kurir" loading="lazy"></button>
+    <div class="project-copy">
+     <p class="mini-label">03 / Platform</p>
+     <h3>LensGo · Kurir Juara</h3><span class="status">Percobaan, belum berjalan</span>
+     <p><strong>Masalah.</strong> Di Lubuklinggau sudah ada kurir lokal yang mengantar pesanan dengan cara manual. Saya ingin tahu apakah pola itu bisa dibuat digital tanpa pembayaran online.</p>
+     <p><strong>Yang saya buat.</strong> Marketplace lokal plus pengiriman lokal, awalnya bernama Kurir Juara. Pembayarannya sepenuhnya offline: kurir mengambil pesanan di merchant dan membayarnya lebih dulu, mengantar ke pembeli, lalu pembeli membayar nilai pesanan ditambah ongkos kirim sesuai yang tertera saat checkout.</p>
+     <p><strong>Batasnya.</strong> Awalnya ingin saya presentasikan ke pemerintah, tetapi sistemnya kompleks dan saya belum percaya diri dengan kesempurnaannya. Rencananya pilot terbatas: Bakso Len sebagai merchant dan satu atau dua kurir. Sampai itu berjalan, ini laboratorium belajar saya, bukan layanan pengantaran yang berjalan. Data dan nama di tangkapan layar adalah contoh.</p>
+     <a class="text-link" href="https://kurir-juara-platform.vercel.app/" target="_blank" rel="noopener noreferrer">Buka proyek ↗</a>
+    </div>
+   </article>
+
+   <article id="project-smartlink-umkm" class="project-card" data-category="platform">
+    <button class="project-image-button" type="button" data-lightbox="3" aria-label="Lihat tangkapan layar SmartLink UMKM"><img src="proyek-smartlink.jpg" alt="Halaman SmartLink UMKM dengan pencarian dan kategori layanan untuk pelaku usaha" loading="lazy"></button>
+    <div class="project-copy">
+     <p class="mini-label">04 / Ruang informasi</p>
+     <h3>SmartLink UMKM</h3><span class="status">Berfungsi, nirlaba</span>
+     <p><strong>Masalah.</strong> Banyak solusi untuk pelaku UMKM sebenarnya sudah ada di internet, tetapi tersebar dan sulit ditemukan oleh yang belum terbiasa.</p>
+     <p><strong>Yang saya buat.</strong> Portal bernama Portal UMKM Juara. Isinya hasil kurasi saya atas solusi yang sudah ada, dirangkum dalam satu situs dengan pencarian dan kategori kebutuhan usaha. Di halamannya saya bedakan mana yang berasal dari UMKM Juara dan mana rujukan pihak lain.</p>
+     <p><strong>Batasnya.</strong> Fungsinya sudah berjalan baik, tetapi saat saya presentasikan ke pemerintah, tanggapannya dingin. Karena itu saya memilih menjadikannya layanan publik nirlaba. Yang belum terjawab: bagaimana menjaga situs ini tetap online tanpa biaya operasional. Manfaatnya bagi pemakai belum saya ukur.</p>
+     <a class="text-link" href="https://website-portal-umkm-juara-git-main-potal-umkm-juara.vercel.app/" target="_blank" rel="noopener noreferrer">Buka proyek ↗</a>
+    </div>
+   </article>
+
+   <article id="project-aplikasi-manajemen-stok" class="project-card" data-category="stok">
+    <button class="project-image-button" type="button" data-lightbox="4" aria-label="Lihat tangkapan layar Aplikasi Manajemen Stok"><img src="proyek-stok.jpg" alt="Tampilan beranda Aplikasi Manajemen Stok pada ponsel, menampilkan ringkasan stok dan posisi persediaan" loading="lazy"></button>
+    <div class="project-copy">
+     <p class="mini-label">05 / Stok Bakso Len</p>
+     <h3>Aplikasi Manajemen Stok</h3><span class="status">Pemakaian pribadi, ± 1 bulan</span>
+     <p><strong>Masalah.</strong> Persediaan usaha perlu tercatat dengan cara yang sesederhana mungkin.</p>
+     <p><strong>Yang saya buat.</strong> Aplikasi stok dengan tampilan di GitHub dan Vercel, dan data di Google Sheets lewat Google Apps Script. Ini aplikasi web pertama saya yang basis datanya Google Sheets. Awalnya saya bangun seluruhnya di dalam Apps Script, tetapi tampilan di HP tidak memenuhi layar karena bingkai (iframe), jadi tampilannya saya pindahkan.</p>
+     <p><strong>Batasnya.</strong> Saya pakai sendiri dan tidak saya bagikan, jadi tautannya tidak dipasang di sini. Dibuat sesederhana mungkin dan belum ada laporan kendala. Keamanan alamat Apps Script, uji pemulihan data, dan kinerja pada data yang sangat besar belum saya uji. Tangkapan layar menampilkan akun uji dengan data masih kosong, dan nama pengguna saya samarkan.</p>
+    </div>
+   </article>
+
+  </div>
+  <p class="gallery-note">Tangkapan layar hanya menunjukkan tampilan. Tautan membuka proyek di tab baru.</p>
+ </div>
+</section>
+
+<!-- CARA KERJA -->
+<section id="how-i-work" class="section" aria-labelledby="work-title">
+ <div class="wrap section-grid">
+  <p class="section-no">03 / Cara Kerja</p>
+  <div class="section-body">
+   <h2 id="work-title">Bekerja kecil-kecil, memeriksa sungguh-sungguh.</h2>
+   <p class="lead">Saya berdiskusi dengan AI dalam bahasa sehari-hari. AI membantu menjelaskan dan membuat draf. Keputusan soal usaha, data, dan kapan berhenti tetap saya yang pegang.</p>
+   <div class="steps">
+    <article class="step"><span class="step-num">01</span><h3>Mulai dari kejadian nyata</h3><p>Saya cari hal yang benar-benar dialami kasir atau staf stok, bukan daftar fitur yang terdengar bagus.</p></article>
+    <article class="step"><span class="step-num">02</span><h3>Tulis dulu kebutuhannya</h3><p>Siapa pemakainya, alur utamanya, data apa yang disimpan, dan apa yang terjadi kalau gagal. Satu halaman cukup.</p></article>
+    <article class="step"><span class="step-num">03</span><h3>Ubah sedikit, uji, baru lanjut</h3><p>Satu perubahan kecil mudah dibaca dan mudah dibatalkan. Permintaan besar sekaligus membuat saya tidak tahu mana yang merusak.</p></article>
+    <article class="step"><span class="step-num">04</span><h3>Curigai hasilnya</h3><p>Saya cocokkan dengan dokumentasi, baca perubahannya, lalu coba alur yang berhasil dan yang gagal. Layar yang rapi belum tentu berarti datanya tersimpan.</p></article>
+    <article class="step"><span class="step-num">05</span><h3>Siapkan jalan kembali</h3><p>Titik aman sebelum perubahan besar, dan cadangan data. Cadangan yang belum pernah dipulihkan masih asumsi, dan uji pemulihan itu masih menjadi utang saya.</p></article>
+    <article class="step"><span class="step-num">06</span><h3>Berhenti saat risikonya terlalu besar</h3><p>Kalau menyangkut uang, data sensitif, hak akses, atau banyak pengguna yang tidak bisa saya periksa sendiri, saya mencari programmer profesional.</p></article>
+   </div>
+   <hr class="rule">
+   <div class="prose">
+    <p>Di repositori setiap proyek saya taruh file <em>agen.md</em>: konteks proyek, tujuan aplikasi, aturan kerja, keputusan penting, dan hal-hal yang tidak boleh diubah sembarangan. File ini saya susun bersama Claude. Gunanya supaya AI tidak kehilangan arah ketika percakapan berganti dan tidak asal menghapus kode. Saya juga memakai custom instructions dan skill. Semuanya membantu mengarahkan, tetapi tidak menjamin hasilnya benar, jadi setiap perubahan tetap saya baca dan uji.</p>
+    <p>Memilih alat saya mulai dari pertanyaan: siapa pemakainya, sebanyak apa datanya, siapa yang merawat, dan berapa biayanya. Untuk aplikasi stok, Google Sheets cukup selama datanya kecil dan penggunanya sedikit. Kalau itu berubah, pilihannya harus ditinjau ulang. Ke depan, untuk UMKM saya cenderung mengarahkan ke ekosistem Google dan Apps Script untuk datanya, dengan tampilan di Vercel dan berkas di GitHub.</p>
+   </div>
+   <p class="mini-label">Alat yang pernah saya pakai (penguasaannya berbeda-beda)</p>
+   <div class="tool-list">
+    <span>Gemini</span><span>Claude</span><span>GitHub</span><span>Vercel</span><span>Google Sheets</span><span>Google Apps Script</span><span>Supabase</span><span>Canva</span>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- CATATAN LAPANGAN -->
+<section id="journal" class="section alt" aria-labelledby="journal-title">
+ <div class="wrap section-grid">
+  <p class="section-no">04 / Catatan Lapangan</p>
+  <div class="section-body">
+   <h2 id="journal-title">Catatan lapangan</h2>
+   <p class="lead">Hal-hal yang saya temui selama membangun, termasuk yang tampak berhasil padahal belum.</p>
+   <div class="journal-grid">
+    <article id="journal-card-01" class="journal-card"><span class="mini-label">Cara pandang 01</span><h3>Tukang bakso pakai AI, kenapa harus malu?</h3><p>Cara saya bekerja dengan AI, apa adanya, dan bagian yang tidak saya serahkan kepadanya.</p><button class="btn primary journal-read" type="button" data-journal="01">Baca selengkapnya</button></article>
+    <article id="journal-card-02" class="journal-card"><span class="mini-label">Cara pandang 02</span><h3>Apa arti vibe coding bagi saya</h3><p>Menjelaskan masalah dengan bahasa warung, lalu memeriksa hasilnya dengan teliti.</p><button class="btn primary journal-read" type="button" data-journal="02">Baca selengkapnya</button></article>
+    <article id="journal-card-03" class="journal-card"><span class="mini-label">Cara pandang 03</span><h3>Aplikasi web atau aplikasi mobile?</h3><p>Lima hal yang saya timbang sebelum memilih bentuk aplikasi.</p><button class="btn primary journal-read" type="button" data-journal="03">Baca selengkapnya</button></article>
+    <article id="journal-card-04" class="journal-card"><span class="mini-label">Cara pandang 04</span><h3>Takut klik tautan? Wajar.</h3><p>Apa yang bisa dan tidak bisa saya jamin tentang proyek-proyek di halaman ini.</p><button class="btn primary journal-read" type="button" data-journal="04">Baca selengkapnya</button></article>
+    <article id="journal-card-05" class="journal-card"><span class="mini-label">Kejadian 05</span><h3>Saat POS menjadi terlalu rumit</h3><p>Dua POS, dua cara menjadi terlalu rumit, dan 86 berkas yang harus dipangkas.</p><button class="btn primary journal-read" type="button" data-journal="05">Baca selengkapnya</button></article>
+    <article id="journal-card-06" class="journal-card"><span class="mini-label">Kejadian 06</span><h3>Ruang kosong di tampilan Google Apps Script</h3><p>Penjelasan yang masuk akal ternyata baru bermasalah saat dibuka di layar.</p><button class="btn primary journal-read" type="button" data-journal="06">Baca selengkapnya</button></article>
+    <article id="journal-card-07" class="journal-card"><span class="mini-label">Kejadian 07</span><h3>Saat pemeriksaan otomatis menghabiskan kuota</h3><p>Empat atau lima berkas otomatisasi dari AI, dan satu pertanyaan yang sekarang selalu saya ajukan.</p><button class="btn primary journal-read" type="button" data-journal="07">Baca selengkapnya</button></article>
+    <article id="journal-card-08" class="journal-card"><span class="mini-label">Pelajaran 08</span><h3>Pesan “berhasil” belum tentu berarti tersimpan</h3><p>Cara saya mengikuti perjalanan data, dari layar sampai ke tempat penyimpanan.</p><button class="btn primary journal-read" type="button" data-journal="08">Baca selengkapnya</button></article>
+    <article id="journal-card-09" class="journal-card"><span class="mini-label">Pelajaran 09</span><h3>Fakta, dugaan, dan belum diuji</h3><p>Tiga kolom yang menjaga saya dari mengubah harapan menjadi klaim, dan isi kolom ketiga milik saya.</p><button class="btn primary journal-read" type="button" data-journal="09">Baca selengkapnya</button></article>
+    <article id="journal-card-10" class="journal-card"><span class="mini-label">Pelajaran 10</span><h3>Kapan saya perlu meminta bantuan profesional?</h3><p>Batas yang saya pasang untuk diri sendiri, dan bagaimana aplikasi kasir saya sendiri masuk ke dalamnya.</p><button class="btn primary journal-read" type="button" data-journal="10">Baca selengkapnya</button></article>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- BUKU & KOMUNITAS -->
+<section id="community" class="section" aria-labelledby="community-title">
+ <div class="wrap section-grid">
+  <p class="section-no">05 / Buku &amp; Komunitas</p>
+  <div class="section-body">
+   <h2 id="community-title">Buku gratis dan ruang belajar bersama.</h2>
+   <p class="lead">Belajar lebih enak kalau bisa saling mengoreksi. Ini ruang kecil untuk mencoba, berbagi temuan, dan menerima masukan.</p>
+   <article class="simple-card book-card">
+    <span class="mini-label">Buku gratis · Edisi 1</span>
+    <h3>Buku Pintar Vibe Coder</h3>
+    <p>Intisari jurnal belajar saya selama membangun aplikasi dengan AI: cara berpikir dan batas AI, cara memeriksa hasilnya, keamanan dasar, cadangan, biaya, sampai daftar hal yang belum saya uji. Edisi pertama ini belum final dan akan saya revisi seiring temuan baru.</p>
+    <a class="text-link" href="https://cuan74468-ux.github.io/buku-pintar-vibe-coder/" target="_blank" rel="noopener noreferrer">Buka halaman buku, unduh PDF atau EPUB ↗</a>
+   </article>
+   <div class="initiative-grid">
+    <article class="simple-card">
+     <span class="mini-label">Belajar bersama</span>
+     <h3>Komunitas Ngulik Digital</h3>
+     <p>Inisiatif untuk belajar alat digital dari pengalaman: berbagi temuan dan kesalahan, dan saling mengoreksi. Kalau Anda ingin bergabung atau punya koreksi untuk apa yang saya tulis, hubungi saya lewat email di bagian kontak.</p>
+    </article>
+    <article class="simple-card">
+     <span class="mini-label">Jasa video dan foto AI</span>
+     <h3>Linggau AI Studio</h3>
+     <p>Merek untuk jasa video iklan pendek dan foto produk berbasis AI bagi pelaku usaha di sekitar Lubuklinggau. Saya merintisnya tahun lalu dengan harga perkenalan Rp50.000 untuk video 20 sampai 30 detik. Alat yang saya pakai tidak saya buka. Sejak mengenal vibe coding, perhatian saya lebih banyak ke pembuatan aplikasi.</p>
+    </article>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- KONTAK -->
+<section id="contact" class="section alt" aria-labelledby="contact-title">
+ <div class="wrap">
+  <p class="section-no">06 / Kontak</p>
+  <div class="contact-layout">
+   <div>
+    <h2 id="contact-title">Ada masalah operasional yang ingin dibicarakan?</h2>
+    <p class="lead">Saya senang bertukar cerita soal kasir, stok, atau pekerjaan harian di usaha kecil, dan menerima koreksi atas apa yang saya buat. Saya belum membuka layanan pembuatan aplikasi. Kalau Anda ingin menjajaki solusi kecil, atau menanyakan jasa video dan foto produk lewat Linggau AI Studio, ceritakan kebutuhannya dulu.</p>
+   </div>
+   <div>
+    <div class="contact-links">
+     <a class="btn primary" href="mailto:peyaje531@gmail.com?subject=Diskusi%20masalah%20operasional">Kirim email ke Ferry ↗</a>
+    </div><span class="contact-detail">peyaje531@gmail.com<br>Lubuklinggau, Sumatera Selatan, Indonesia</span>
+   </div>
+  </div>
+ </div>
+</section>
+
+</main>
+
+<footer id="site-footer" class="site-footer">
+ <div class="wrap footer-inner">
+  <div>
+   <strong>FERRY.</strong>
+   <p>Pelaku usaha Bakso Len · Terus belajar membangun alat yang berguna.</p>
+  </div><span class="copyright">© 2026 Ferry. Seluruh hak cipta dilindungi.</span>
+ </div>
+</footer>
+
+<dialog id="lightbox" aria-label="Pratinjau tangkapan layar proyek">
+ <div class="lightbox-head"><strong id="lightbox-title"></strong><button id="lightbox-close" type="button" aria-label="Tutup pratinjau">Tutup ×</button></div>
+ <img id="lightbox-image" class="lightbox-image" src="proyek-umkm-juara-pos.jpg" alt="Pratinjau tangkapan layar proyek">
+ <div class="lightbox-controls"><button id="lightbox-prev" type="button">← Sebelumnya</button><button id="lightbox-next" type="button">Berikutnya →</button></div>
+</dialog>
+
+<dialog id="journal-dialog" aria-label="Bacaan catatan lapangan" aria-modal="true">
+ <div class="journal-dialog-head"><p class="mini-label">Catatan Lapangan</p><button id="journal-dialog-close" type="button">Tutup ×</button></div>
+
+ <article id="journal-detail-01" class="journal-detail" hidden>
+  <h2>Tukang bakso pakai AI, kenapa harus malu?</h2>
+  <p class="journal-subtitle">Cara saya bekerja dengan AI, apa adanya.</p>
+  <p>Saya tidak datang dari dunia pemrograman. Waktu mulai, banyak istilah yang tidak saya mengerti, dan saya bertanya langsung ke AI seperti bertanya kepada rekan kerja: apa maksudnya, kenapa begitu, apa bedanya dengan yang satunya lagi.</p>
+  <p>Saya juga tidak memakai rumus prompt yang rumit. Saya menulis apa yang saya butuhkan atau apa yang sedang rusak di layar, dengan bahasa sehari-hari. Karena cara menulis saya tidak baku, saya tidak bergantung pada prompt saja. Di setiap proyek ada file <em>agen.md</em> yang memuat konteks proyek, tujuan aplikasi, aturan kerja, dan hal-hal yang tidak boleh diubah sembarangan. Dengan begitu AI yang membantu saya punya pegangan yang sama dari awal sampai akhir, juga ketika saya berganti percakapan.</p>
+  <p>Soal malu, saya tidak merasa perlu. Yang saya jaga adalah bagian yang tidak bisa diserahkan. Saya yang memutuskan aturan usahanya, saya yang membaca perubahan, saya yang mencoba hasilnya di layar, dan saya yang menjawab kalau ada yang salah. Kalau ada bagian yang belum saya mengerti, saya akui belum mengerti.</p>
+ </article>
+
+ <article id="journal-detail-02" class="journal-detail" hidden>
+  <h2>Apa arti vibe coding bagi saya</h2>
+  <p class="journal-subtitle">Menjelaskan masalah dengan bahasa warung, memeriksa hasilnya dengan teliti.</p>
+  <p>Bagi saya vibe coding berarti saya menjelaskan masalah kepada AI dan AI menulis sebagian besar draf kodenya. Saya tetap memegang bagian yang tidak dimiliki AI. AI tidak mengalami sendiri jam sibuk di warung, jadi aturan usaha harus datang dari saya: siapa boleh mengubah apa, apa yang terjadi kalau stok habis, apa yang dianggap transaksi selesai.</p>
+  <p>Ada tiga kejadian yang membuat saya berhati-hati. Di proyek POS, 86 berkas harus dipangkas karena rekayasanya berlebihan. Di aplikasi stok, tampilan di Google Apps Script menyisakan ruang kosong yang lebar. Di satu proyek lain, pemeriksaan otomatis dari AI menghabiskan kuota layanan. Ketiganya terdengar masuk akal ketika dijelaskan, dan baru bermasalah setelah dicoba. Ceritanya ada di catatan lapangan lain di halaman ini.</p>
+  <p>Karena itu cara kerja saya begini: meminta langkah kecil, membaca perubahannya, mencoba alur yang berhasil dan yang gagal, dan menyimpan titik aman sebelum perubahan besar. Kalau risikonya sudah melewati kemampuan saya memeriksa, misalnya menyangkut uang atau data sensitif, saya berhenti dan mencari programmer profesional.</p>
+ </article>
+
+ <article id="journal-detail-03" class="journal-detail" hidden>
+  <h2>Aplikasi web atau aplikasi mobile?</h2>
+  <p class="journal-subtitle">Lima hal yang saya timbang sebelum memilih bentuk aplikasi.</p>
+  <p>Ada yang bertanya kenapa aplikasi saya berbentuk web, bukan aplikasi mobile. Pertanyaan itu wajar. Jawabannya saya cari dari lima hal: siapa yang memakai, HP apa yang mereka pegang, bagaimana koneksi di tempat kerja, bagaimana pembaruan sampai ke mereka, dan siapa yang merawat.</p>
+  <p>Aplikasi web yang diterbitkan lewat Vercel dibuka dari tautan dan diperbarui cukup dengan menerbitkan versi baru, jadi staf tidak perlu memasang ulang apa pun. Untuk usaha kecil yang perawatnya satu orang, itu keuntungan nyata. Ada alasan yang lebih jujur: saya bekerja sendirian dan tidak punya dana. Untuk menerbitkan aplikasi mobile di Google Play lewat akun pengembang pribadi baru, saya perlu 12 penguji selama 14 hari, dan saya tidak punya penguji sebanyak itu, apalagi anggarannya. Web dan layanan gratis adalah yang bisa saya jangkau. Kekurangannya juga nyata: aplikasi web bergantung pada koneksi, dan aksesnya ke fitur perangkat lebih terbatas dibanding aplikasi bawaan.</p>
+  <p>Soal koneksi itulah yang mendorong POS Sederhana Bakso Len dirancang offline-first, supaya kasir tetap bisa bekerja saat internet putus. Rancangannya sudah ada, tetapi saya belum menguji semua keadaan tanpa koneksi, jadi belum saya sebut terbukti. Aplikasi mobile mungkin layak dipertimbangkan kalau kebutuhannya berubah. Untuk hari ini saya memilih bentuk yang paling bisa saya rawat sendiri.</p>
+ </article>
+
+ <article id="journal-detail-04" class="journal-detail" hidden>
+  <h2>Takut klik tautan? Wajar.</h2>
+  <p class="journal-subtitle">Apa yang bisa dan tidak bisa saya jamin tentang proyek di halaman ini.</p>
+  <p>Tautan di halaman ini mengarah ke aplikasi yang saya terbitkan lewat Vercel. Kalau Anda ragu membukanya, itu sikap yang sehat. Saya sendiri tidak mau meminta orang percaya hanya karena ada tangkapan layar yang rapi.</p>
+  <p>Yang bisa saya berikan: saya pemilik Bakso Len di Lubuklinggau dan Curup, satu aplikasi di sini dipakai staf saya sendiri di Curup, satu saya pakai pribadi, dan sisanya masih percobaan atau portal informasi. Setiap kartu proyek menyebut statusnya. Yang tidak bisa saya berikan adalah jaminan bahwa keamanannya sudah diaudit. Audit itu belum ada, dan saya menyebutnya terang-terangan.</p>
+  <p>Kalau Anda tetap ingin mencoba, jangan memasukkan data pribadi yang sensitif ke aplikasi mana pun yang belum Anda yakini, termasuk milik saya. Kalau ingin bertanya dulu, tulis ke email saya di bagian kontak.</p>
+  <p>Beberapa hal yang bisa Anda cek sendiri sebelum membuka tautan proyek mana pun: alamatnya sesuai dengan yang tertulis di kartu proyek, halaman tidak meminta kata sandi atau data pembayaran, dan Anda tidak diminta memasang apa pun. Itu berlaku untuk situs saya dan untuk situs lain.</p>
+ </article>
+
+ <article id="journal-detail-05" class="journal-detail" hidden>
+  <h2>Saat POS menjadi terlalu rumit</h2>
+  <p class="journal-subtitle">Dua POS, dua kesalahan yang berbeda.</p>
+  <p>Saya mengalami ini dua kali, di kedua POS buatan saya. UMKM Juara POS kelebihan fitur: saya terlalu mudah meminta AI menambah ini dan itu, dan banyak di antaranya tidak dibutuhkan kasir. POS Sederhana Bakso Len kelebihan rekayasa: pada satu masa saya membuatnya sekaligus sebagai aplikasi desktop yang dipasang di komputer dan sebagai PWA di browser. Dua jalur berarti dua kali kerja dan dua kali celah, padahal saya sendirian dan belum paham struktur aman sebuah aplikasi web.</p>
+  <p>Setelah ditinjau ulang, POS Sederhana saya pangkas 86 berkas dan seluruh folder aplikasi desktopnya saya buang. Sekarang saya menyebutnya hampir aman, bukan aman.</p>
+  <p>AI hampir selalu bisa membuatkan apa pun yang diminta. Itu yang membuat masalahnya sulit terlihat: tidak ada yang berkata “cukup”. Setiap fitur dan setiap jalur tambahan menambah data, aturan, layar, dan kemungkinan error yang harus saya rawat sendiri.</p>
+  <p>Sekarang sebelum menerima tambahan dari AI, saya bertanya: ini dibutuhkan kasir, atau hanya karena bisa dibuat? Kalau saya sendiri sulit menjelaskan atau merawat sebuah tambahan, itu tanda untuk berhenti.</p>
+  <p>Tiga pertanyaan yang sekarang saya pakai untuk menyaring tambahan dari AI. Pertama, siapa yang akan memakai fitur ini dan kapan? Kalau jawabannya “mungkin suatu hari”, fitur itu menunggu. Kedua, apa yang rusak kalau fitur ini tidak ada? Kalau tidak ada yang rusak, itu keinginan, bukan kebutuhan. Ketiga, siapa yang merawatnya? Jawabannya selalu saya, jadi tiap tambahan harus sepadan dengan tenaga saya.</p>
+  <p>Pemangkasan itu memang tidak terasa seperti kemajuan, tetapi POS yang lebih kecil lebih mudah saya jelaskan dan lebih mudah saya periksa keamanannya.</p>
+ </article>
+
+ <article id="journal-detail-06" class="journal-detail" hidden>
+  <h2>Ruang kosong di tampilan Google Apps Script</h2>
+  <p class="journal-subtitle">Masalah yang baru terlihat setelah dicoba.</p>
+  <p>Aplikasi Stok Bakso Len semula saya bangun utuh di dalam Google Apps Script. Setelah saya buka dan coba, tampilannya berada di dalam bingkai (iframe) dan menyisakan ruang kosong yang lebar di bagian bawah layar. Penjelasan AI sebelumnya terdengar masuk akal. Kelemahannya tidak terlihat dari penjelasan itu, baru terlihat ketika saya membukanya sendiri.</p>
+  <p>Saya lalu memindahkan tampilan depan ke GitHub dan Vercel, sementara data tetap di Google Sheets lewat Google Apps Script. Alasan utamanya tampilan di HP yang tidak memenuhi layar. Pola ini saya pakai sendiri sejak sebulan terakhir dan belum 100% final.</p>
+  <p>Ada pertanyaan yang belum saya jawab tuntas pada pola ini: siapa saja yang bisa memanggil alamat Apps Script-nya? Pemakaian sehari-hari tidak membuktikan keamanannya, dan saya juga belum menguji aplikasi ini pada data yang sangat besar. Dua hal itu masih ada di daftar pekerjaan saya.</p>
+  <p>Penyebabnya adalah bingkai (iframe) tempat Google Apps Script menyajikan halaman, yang membuat tampilan di HP tidak memenuhi layar. Memindahkan tampilan ke luar memberi saya kendali itu, sementara Google Sheets tetap menjadi tempat data yang mudah dibaca pemilik usaha.</p>
+  <p>Pelajaran praktisnya: saran yang masuk akal tidak ada gunanya sebelum dicoba di layar yang sebenarnya, apalagi di HP.</p>
+ </article>
+
+ <article id="journal-detail-07" class="journal-detail" hidden>
+  <h2>Saat pemeriksaan otomatis menghabiskan kuota</h2>
+  <p class="journal-subtitle">Yang berjalan di belakang layar juga punya ongkos.</p>
+  <p>Di satu proyek, AI membantu membuat sekitar empat atau lima berkas pemeriksaan otomatis berformat .yml untuk GitHub Actions. Semuanya berjalan setiap kali aplikasi diterbitkan, sampai kuota layanan pada saat itu habis. Jujur saja, saya belum memahami rincian teknisnya waktu itu.</p>
+  <p>Saya meminta semua pemeriksaan itu dinonaktifkan, lalu memperbaiki proyeknya sedikit demi sedikit. Sekarang, sebelum menyetujui berkas otomatisasi dari AI, saya minta dijelaskan tiga hal: apa yang dijalankan, kapan dijalankan, dan berapa pemakaiannya.</p>
+  <p>Aturan dan kuota layanan bisa berubah, jadi pengalaman lama ini bukan patokan untuk kondisi sekarang. Yang saya bawa dari kejadian itu adalah kebiasaan bertanya, bukan angka.</p>
+  <p>Pertanyaan lengkap yang sekarang saya ajukan sebelum menerima otomatisasi dari AI: apa yang memicunya (setiap terbit, setiap perubahan, atau terjadwal)? Berapa lama satu kali jalan? Apa yang terjadi ketika batasnya habis: berhenti, ditagih, atau diperlambat? Dan apakah saya bisa mematikannya dengan mudah kalau ternyata berlebihan?</p>
+  <p>Pemeriksaan otomatis itu sendiri bukan hal buruk. Masalahnya ada pada saya, yang menerima berkas tanpa tahu ongkosnya. AI menambahkan semuanya dengan niat baik, dan saya hanya perlu bertanya.</p>
+ </article>
+
+ <article id="journal-detail-08" class="journal-detail" hidden>
+  <h2>Pesan “berhasil” belum tentu berarti tersimpan</h2>
+  <p class="journal-subtitle">Pelajaran pemeriksaan, bukan laporan kejadian baru.</p>
+  <p>Layar bisa menampilkan “berhasil” walaupun penyimpanannya gagal. Contoh yang saya pakai untuk berlatih: menyimpan jumlah stok 0, aplikasi menjawab berhasil, padahal data di tempat penyimpanan tidak berubah. Tampilan yang meyakinkan tidak cukup untuk menyimpulkan alurnya benar.</p>
+  <p>Karena itu saya mengikuti perjalanan datanya: dari masukan, pemrosesan, penyimpanan, sampai dibaca kembali. Untuk aplikasi yang datanya di Google Sheets, artinya saya membuka lembarnya dan memastikan barisnya benar-benar berubah. Saya juga mencoba nilai kosong, nilai yang salah, dan pengiriman dua kali.</p>
+  <p>Kalau sebuah langkah belum saya periksa, saya menulisnya “belum diuji”, bukan “berhasil”.</p>
+  <p>Rutinitas pendek yang saya pakai tiap kali ada perubahan pada penyimpanan data: simpan satu data uji, lihat apakah muncul di tempat penyimpanan, muat ulang halaman dan lihat apakah masih ada, lalu coba skenario gagalnya (kosong, salah format, dan terkirim dua kali). Kalau salah satu langkah itu saya lewati, saya tandai sebagai belum diuji.</p>
+  <p>Kebiasaan ini membosankan, tetapi untuk aplikasi kasir dan stok, satu baris yang hilang berarti satu catatan usaha yang salah.</p>
+ </article>
+
+ <article id="journal-detail-09" class="journal-detail" hidden>
+  <h2>Fakta, dugaan, dan belum diuji</h2>
+  <p class="journal-subtitle">Tiga kolom yang menjaga laporan saya tetap jujur.</p>
+  <p><strong>Fakta</strong> adalah yang bisa saya amati. Staf kasir di Curup memakai POS UMKM Juara sekitar enam bulan dan sejauh ini tidak ada laporan kendala, sedangkan aplikasi stok baru saya pakai sendiri sekitar sebulan. <strong>Dugaan</strong> adalah kemungkinan yang masih perlu dibuktikan. Misalnya, aplikasi stok yang sederhana mungkin membuat pencatatan lebih akurat. Itu bisa benar, tetapi baru sebulan dan saya belum mengukurnya.</p>
+  <p><strong>Belum diuji</strong> berarti saya belum punya hasil pemeriksaan yang bisa ditunjukkan. Untuk aplikasi saya, isinya sekarang: uji pemulihan cadangan, uji hak akses kasir dan pemilik, pengamanan alamat Apps Script, dan kinerja pada data yang sangat besar.</p>
+  <p>Memisahkan ketiganya membuat saya tidak mengubah “aplikasinya dipakai” menjadi “aplikasinya pasti aman”. Daftar lengkap hal yang belum teruji ada di lampiran buku saya, dan akan saya coret satu per satu hanya setelah ada hasil ujinya.</p>
+  <p>Cara saya mencatatnya sederhana: tiga kolom, satu baris per hal. Contoh isi kolom pertama: “POS UMKM Juara dipakai staf kasir Curup”. Kolom kedua: “Aplikasi stok yang sederhana mungkin cukup untuk kebutuhan saya”. Kolom ketiga: “Uji pemulihan cadangan”. Sebuah hal baru boleh pindah dari kolom kedua atau ketiga ke kolom pertama hanya kalau ada hasil yang bisa saya tunjukkan.</p>
+ </article>
+
+ <article id="journal-detail-10" class="journal-detail" hidden>
+  <h2>Kapan saya perlu meminta bantuan profesional?</h2>
+  <p class="journal-subtitle">Batas yang saya pasang untuk diri sendiri.</p>
+  <p>Kalau sebuah kesalahan menyangkut uang, data sensitif, hak akses, banyak pengguna, atau pemulihan yang tidak bisa saya pastikan, saya tidak akan sekadar meminta AI menjawab dengan lebih yakin. Saya perlu programmer profesional yang mampu memeriksa risikonya.</p>
+  <p>Kriteria itu berlaku juga untuk aplikasi saya sendiri. POS UMKM Juara mencatat transaksi uang setiap hari, dan itu termasuk wilayah yang menuntut pemeriksaan lebih serius daripada yang bisa saya lakukan sekarang. Karena POS ini multi-tenant, pemeriksaan yang paling mendesak adalah memastikan data satu usaha tidak terbaca usaha lain. Sampai itu selesai, saya menyebut statusnya apa adanya dan membatasi apa yang dikerjakan staf: hanya pekerjaan harian, tanpa mengubah data induk atau pengaturan.</p>
+  <p>Meminta bantuan bukan tanda gagal belajar. Itu cara menghormati orang yang memakai alat ini dan data yang mereka percayakan.</p>
+  <p>Tanda-tanda yang membuat saya berhenti: saya tidak tahu data apa yang berubah, saya tidak punya titik pemulihan, saya tidak bisa membedakan akun uji dengan akun nyata, atau saya merasa harus menerima jawaban AI karena tidak mampu memeriksanya. Satu saja dari keempatnya sudah cukup untuk menunda rilis.</p>
+ </article>
+</dialog>
+
+<script>
+
+    const projects=[
+      {name:"UMKM Juara POS",src:"proyek-umkm-juara-pos.jpg",alt:"Tampilan UMKM Juara POS dengan menu bakso dan keranjang transaksi"},
+      {name:"POS Sederhana Bakso Len",src:"proyek-pos-sederhana.jpg",alt:"Halaman POS Sederhana Bakso Len dengan penjelasan kasir yang tetap siap saat koneksi tidak stabil"},
+      {name:"LensGo",src:"proyek-lensgo.jpg",alt:"Beranda LensGo dengan kategori belanja, promosi, dan pilihan kurir"},
+      {name:"SmartLink UMKM",src:"proyek-smartlink.jpg",alt:"Halaman SmartLink UMKM dengan pencarian dan kategori layanan untuk pelaku usaha"},
+      {name:"Aplikasi Manajemen Stok",src:"proyek-stok.jpg",alt:"Tampilan beranda Aplikasi Manajemen Stok pada ponsel, menampilkan ringkasan stok dan posisi persediaan"}
+    ];
+    const root=document.documentElement,themeButton=document.getElementById("theme-toggle"),themeMeta=document.querySelector('meta[name="theme-color"]');
+    let savedTheme=null;try{savedTheme=localStorage.getItem("ferry-theme")}catch(e){}
+    function setTheme(theme){root.dataset.theme=theme;const light=theme==="light";themeButton.textContent=light?"☾ Mode gelap":"☀ Mode terang";themeButton.setAttribute("aria-label",light?"Aktifkan mode gelap":"Aktifkan mode terang");themeButton.setAttribute("aria-pressed",String(light));themeButton.title=light?"Mode terang aktif; beralih ke mode gelap":"Mode gelap aktif; beralih ke mode terang";themeMeta.content=light?"#faf8f2":"#14213f"}
+    setTheme(savedTheme==="light"||savedTheme==="dark"?savedTheme:(window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"));
+    themeButton.addEventListener("click",()=>{const next=root.dataset.theme==="light"?"dark":"light";setTheme(next);try{localStorage.setItem("ferry-theme",next)}catch(e){}});
+    const menuButton=document.getElementById("menu-toggle"),nav=document.getElementById("nav-links");
+    function closeMenu(){nav.classList.remove("open");menuButton.setAttribute("aria-expanded","false");menuButton.textContent="Menu"}
+    menuButton.addEventListener("click",()=>{const open=nav.classList.toggle("open");menuButton.setAttribute("aria-expanded",String(open));menuButton.textContent=open?"Tutup":"Menu"});
+    nav.addEventListener("click",event=>{if(event.target.closest("a"))closeMenu()});
+    document.addEventListener("keydown",event=>{if(event.key==="Escape"&&nav.classList.contains("open")){closeMenu();menuButton.focus()}});
+    const sections=[...document.querySelectorAll("main > section")],navLinks=[...nav.querySelectorAll("a")];
+    function updateActiveNav(){let id="";try{id=decodeURIComponent(location.hash.slice(1))}catch(e){}const target=sections.find(section=>section.id===id)||document.getElementById("home");sections.forEach(section=>section.classList.toggle("is-active",section===target));navLinks.forEach(link=>{const active=link.getAttribute("href")==="#"+target.id;link.classList.toggle("active",active);if(active)link.setAttribute("aria-current","page");else link.removeAttribute("aria-current")});closeMenu();window.scrollTo({top:0,behavior:"instant"})}
+    window.addEventListener("hashchange",updateActiveNav);updateActiveNav();
+    document.querySelectorAll("[data-filter]").forEach(button=>button.addEventListener("click",()=>{const filter=button.dataset.filter;document.querySelectorAll("[data-filter]").forEach(item=>item.setAttribute("aria-pressed",String(item===button)));document.querySelectorAll(".project-card").forEach(card=>card.hidden=filter!=="all"&&card.dataset.category!==filter)}));
+    const lightbox=document.getElementById("lightbox"),lightboxImage=document.getElementById("lightbox-image");let currentImage=0;
+    function showImage(index){currentImage=(index+projects.length)%projects.length;const project=projects[currentImage];document.getElementById("lightbox-title").textContent=project.name;lightboxImage.src=project.src;lightboxImage.alt=project.alt}
+    document.querySelectorAll("[data-lightbox]").forEach(button=>button.addEventListener("click",()=>{showImage(Number(button.dataset.lightbox));lightbox.showModal()}));
+    document.getElementById("lightbox-close").addEventListener("click",()=>lightbox.close());
+    document.getElementById("lightbox-prev").addEventListener("click",()=>showImage(currentImage-1));
+    document.getElementById("lightbox-next").addEventListener("click",()=>showImage(currentImage+1));
+    lightbox.addEventListener("click",event=>{if(event.target===lightbox)lightbox.close()});
+    lightbox.addEventListener("keydown",event=>{if(event.key==="ArrowLeft"){event.preventDefault();showImage(currentImage-1)}if(event.key==="ArrowRight"){event.preventDefault();showImage(currentImage+1)}});
+    const journalDialog=document.getElementById("journal-dialog"),journalDetails=[...journalDialog.querySelectorAll(".journal-detail")];
+    document.querySelectorAll("[data-journal]").forEach(button=>button.addEventListener("click",()=>{const selected=document.getElementById("journal-detail-"+button.dataset.journal);journalDetails.forEach(detail=>detail.hidden=detail!==selected);journalDialog.showModal();journalDialog.scrollTop=0;document.getElementById("journal-dialog-close").focus()}));
+    document.getElementById("journal-dialog-close").addEventListener("click",()=>journalDialog.close());
+    journalDialog.addEventListener("click",event=>{if(event.target===journalDialog)journalDialog.close()});
+  
+</script>
+</body>
+</html>
