@@ -114,7 +114,7 @@ function checkSiteContent_(input){
    if(key==='character.image'&&!/^(?:\.\/)?assets\/[a-zA-Z0-9._/-]+$/.test(value)&&!/^https:\/\//.test(value))throw Error('Gambar karakter tidak valid.');
   }
   if(key.endsWith('.url')||key.endsWith('.link')){if(!value||!(validUrl_(value,false)))throw Error('URL tautan tidak valid.');}
-  total+=key.length+value.length;if(total>120000)throw Error('Ukuran konten terlalu besar.');
+  total+=key.length+value.length;if(total>38000)throw Error('Ukuran konten terlalu besar.');
   result[key]=value;
  }
  return result;
@@ -154,7 +154,7 @@ function revertSite_(b){
 function doPost(e){
  let lock;
  try{
-  if(!e||!e.postData||e.postData.contents.length>20000)throw Error('Permintaan tidak valid.');const b=JSON.parse(e.postData.contents);
+  if(!e||!e.postData||e.postData.contents.length>100000)throw Error('Permintaan tidak valid.');const b=JSON.parse(e.postData.contents);
   lock=LockService.getScriptLock();lock.waitLock(15000);let result;
   switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
   return json_(result);
