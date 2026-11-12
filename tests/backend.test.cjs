@@ -9,7 +9,7 @@ const sheets=new Map(),props=new Map(),cache=new Map();
 const propertyApi={getProperty:k=>props.get(k)||null,setProperty:(k,v)=>props.set(k,v),deleteProperty:k=>props.delete(k)};
 const database={getSheetByName:n=>sheets.get(n),insertSheet:n=>{const s=new Sheet();sheets.set(n,s);return s;},getUrl:()=> 'https://docs.google.com/spreadsheets/d/mock'};
 const ctx={console,Date,JSON,Map,Set,Utilities:{getUuid:()=>crypto.randomUUID(),Charset:{UTF_8:'utf8'},DigestAlgorithm:{SHA_256:'sha256'},computeDigest:(a,v)=>[...crypto.createHash(a).update(v).digest()],computeHmacSha256Signature:(v,k)=>[...crypto.createHmac('sha256',k).update(v).digest()],formatDate:()=>new Date().toISOString().slice(0,10)},PropertiesService:{getScriptProperties:()=>propertyApi},SpreadsheetApp:{openById:()=>database,flush:()=>{}},CacheService:{getScriptCache:()=>({put:(k,v)=>cache.set(k,v),get:k=>cache.get(k),remove:k=>cache.delete(k)})},LockService:{getScriptLock:()=>({waitLock:()=>{},releaseLock:()=>{}})},ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({setMimeType:()=>JSON.parse(text)})},ScriptApp:{getService:()=>({getUrl:()=>null})}};
-vm.createContext(ctx);vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../Code.gs'),'utf8'),ctx);
+vm.createContext(ctx);vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../Code.gs'),'utf8'),ctx);vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../AdminRecovery.gs'),'utf8'),ctx);
 const pass='Only-For-Unit-Test-456!';props.set('ADMIN_INITIAL_PASSWORD',pass);
 assert.equal(ctx.doGet({parameter:{action:'health'}}).ready,false,'Must not report ready before setup');
 assert.equal(ctx.setupDatabase().ok,true);
@@ -58,4 +58,17 @@ assert.equal(post(lead).ok,true);assert.equal(post(lead).duplicate,true);assert.
 assert.equal(post({action:'logout',token:session.token}).ok,true);assert.equal(post({action:'saveProject',token:session.token,expectedRevision:result.revision,project:p}).ok,false);
 for(let i=0;i<10;i++)post({action:'login',email:'peyaje531@gmail.com',password:'wrong'});assert.match(post({action:'login',email:'peyaje531@gmail.com',password:pass}).error,/Terlalu banyak/);
 assert.equal(ctx.doPost({postData:{contents:'not json'}}).ok,false);
+const newOwnerPassword='Unique-Owner-Reset-For-Unit-Test-2026!';
+const retainedProjects=sheets.get('projects').rows.length,retainedLeads=sheets.get('leads').rows.length;
+props.set('ADMIN_RESET_PASSWORD',newOwnerPassword);
+const recovered=ctx.resetStudioAdminPassword();
+assert.equal(recovered.ok,true,'Owner-run recovery must confirm completion');
+assert.equal(props.has('ADMIN_RESET_PASSWORD'),false,'One-time password property must be removed');
+assert.equal(props.has('LOGIN_RATE'),false,'Lockout should be cleared on owner recovery');
+assert.match(sheets.get('admin').rows[1][1],/^hmac-sha256\$/);
+assert.equal(post({action:'login',email:'peyaje531@gmail.com',password:pass}).ok,false,'Previous password must stop working');
+assert.equal(post({action:'login',email:'peyaje531@gmail.com',password:newOwnerPassword}).ok,true,'New password must work');
+assert.equal(sheets.get('projects').rows.length,retainedProjects);
+assert.equal(sheets.get('leads').rows.length,retainedLeads);
+
 console.log('PASS: CMS site save, restore, validation, locking, setup idempotency, private-data exclusion, login, logout, session checks, stale revision rejection, URL validation, featured limit, formula protection, lead consent, deduplication, honeypot, throttling and malformed requests.');
