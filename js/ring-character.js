@@ -150,7 +150,11 @@ window.STUDIO.updateProjects = rows => {
   const clean=rows.filter(p=>p && /^[a-z0-9][a-z0-9-]{0,59}$/.test(p.id) && typeof p.nama==='string').map(p=>({...p,name:p.nama,featured_ring:p.featured_ring===true||String(p.featured_ring).toLowerCase()==='true'}));
   if(!clean.length)return;
   const featured=clean.filter(p=>p.featured_ring).slice(0,5);
-  for(const p of DEFAULT_PROJECTS)if(featured.length<5&&!featured.some(x=>x.id===p.id))featured.push(clean.find(x=>x.id===p.id)||p);
+  // Fill remaining ring slots only from currently active records. Archived
+  // seed projects must never silently reappear in the public carousel.
+  for(const p of clean)if(featured.length<5&&!featured.some(x=>x.id===p.id))featured.push(p);
+  const candidates=featured.slice();
+  for(let i=0;featured.length<5;i++)featured.push(candidates[i%candidates.length]);
   PROJECTS=featured;
   window.STUDIO.projects=clean;
   for(const key of Object.keys(CASE))delete CASE[key];
