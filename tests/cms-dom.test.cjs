@@ -65,4 +65,23 @@ assert(adminHtml.includes('id="diagnoseModules"')&&adminHtml.includes('id="diagn
 assert(adminJS.includes("async function diagnoseModules()"),'Module diagnostics should be implemented');
 assert(adminJS.includes("'workspaceLeads'")&&adminJS.includes("'mediaList'")&&adminJS.includes("'contentList'"),'Diagnostics must check advanced backend modules');
 
+// Public portfolio regression checks: do not show backend internals to visitors.
+const publicStyle=read('css/style.css'),navJS=read('js/navigation-physics.js'),
+ ringJS=read('js/ring-character.js'),siteCopy=read('js/site-content.js'),seed=read('Code.gs');
+for(const source of [publicHtml,publicCMS,ringJS,navJS,seed])
+ assert(!source.includes('6289509016792'),'Former WhatsApp number must not remain in active public defaults');
+assert(publicHtml.includes('https://wa.me/6283160697880'),'Public contact must use the new WhatsApp number');
+assert(navJS.includes('6283160697880'),'Catalog contact fallback must use the new WhatsApp number');
+assert(ringJS.includes('https://pos-sederhana-bakso-len.vercel.app/'),'POS Lite must point to the requested live demo');
+assert(ringJS.includes('https://cuan74468-ux.github.io/buku-pintar-vibe-coder/'),'Ebook fallback must point to the library');
+assert(!publicCMS.includes('Form tersambung ke backend. Pesan akan disimpan setelah pengiriman berhasil.'),
+ 'Visitors must not see technical connection confirmation');
+assert(publicCMS.includes('Silakan isi formulir di atas.'),'Visitor-friendly idle form guidance required');
+assert(publicCMS.includes('Pesan belum dapat dikonfirmasi terkirim.'),'Visitor errors must use safe generic wording');
+assert(publicStyle.includes('@media (min-width:801px)'),'Hero desktop-specific safe layout required');
+assert(publicStyle.includes('.hero h1 .ln{white-space:normal'),'Long hero lines must wrap on desktop');
+assert(publicHtml.includes('css/style.css?v=20261112-public-v5'),'Public stylesheet should bust previous cache');
+assert(navJS.includes("projectLink.textContent="),'Project CTA must reflect demo vs WhatsApp destinations');
+assert(siteCopy.includes('Pesan Anda berhasil dikirim.'),'Public success state must be reader-friendly');
+
 console.log('PASS: standalone workspace navigation, authenticated client operations, shared schema, and legacy fallback');
