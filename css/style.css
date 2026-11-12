@@ -474,3 +474,9 @@ html.lite .hero-bg i,html.lite .glow i{animation:none!important}
 .cms-project-card strong{display:block;font:600 13px/1.4 var(--body);overflow-wrap:anywhere}
 .cms-project-card small{display:block;font:11px/1.6 var(--body);color:#777e8c;margin-top:5px}
 @media(max-width:650px){.admin-modal .admin-projects{grid-template-columns:1fr}}
+
+/* CMS backend connection state: avoid exposing setup fields when an endpoint is already configured. */
+.cms-backend-status{margin:14px 0 8px!important;padding:11px 14px;border-radius:11px;background:#f1f4f8;color:#47546a;font:12px/1.65 var(--body)!important}
+.cms-backend-status[data-connection="ready"]{background:#edf7f0;color:#286345}
+.cms-backend-status[data-connection="legacy"]{background:#fff5e7;color:#805622}
+.cms-backend-status[data-connection="pending"]{background:#f6f2eb;color:#70583f}
