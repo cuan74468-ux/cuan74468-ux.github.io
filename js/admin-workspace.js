@@ -6,7 +6,7 @@ const $=(s,root=document)=>root.querySelector(s), $$=(s,root=document)=>[...root
 const VALID_GAS=/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/;
 const SCHEMA=window.STUDIO_SCHEMA||[];
 const groups=[...new Set(SCHEMA.map(f=>f.group))];
-const state={gas:'',token:'',expires:0,email:'',projects:[],revision:'',siteContent:{},siteRevision:'',defaults:{},draft:{},dirty:false,group:groups[0]||'',fieldPage:1,projectPage:1,projectSearch:'',projectTab:'active',archive:[],archiveTotal:0,archivePages:1,leadPage:1,leadStatus:'semua',leadSearch:'',leads:[],leadPages:1,leadTotal:0,historyPage:1,historyPages:1,history:[],overview:null,previewReady:false,view:'overview'};
+const state={gas:'',token:'',expires:0,email:'',projects:[],revision:'',siteContent:{},siteRevision:'',defaults:{},draft:{},dirty:false,group:groups[0]||'',fieldPage:1,projectPage:1,projectSearch:'',projectTab:'active',archive:[],archiveTotal:0,archivePages:1,leadPage:1,leadStatus:'semua',leadSearch:'',leads:[],leadPages:1,leadTotal:0,historyPage:1,historyPages:1,history:[],overview:null,previewReady:false,view:'overview',media:[],mediaPage:1,mediaPages:1,mediaTotal:0,mediaFilter:'active',mediaSearch:'',mediaUploadConfigured:false};
 let toastTimer=null,leadTimer=null;
 const toast=(message,bad=false)=>{
  const el=$('#toast');el.textContent=String(message||'Terjadi kesalahan');el.classList.toggle('error',bad);el.classList.add('show');
@@ -35,7 +35,7 @@ function isLoggedIn(){return !!state.token&&Date.now()<state.expires;}
 function needLogin(){if(!isLoggedIn())throw Error('Sesi admin berakhir. Masuk kembali.');}
 async function request(action,body=null){
  if(!VALID_GAS.test(state.gas))throw Error('URL Google Apps Script belum terkonfigurasi. Periksa config.json.');
- const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),30000);
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),action==='mediaUpload'?90000:30000);
  try{
   const options={redirect:'follow',credentials:'omit',cache:'no-store',signal:ctl.signal};
   if(body!==null){options.method='POST';options.headers={'Content-Type':'text/plain;charset=utf-8'};options.body=JSON.stringify({action,...body});}
@@ -75,7 +75,7 @@ function setView(name){
  if(name==='pages'){renderGroups();renderFields();}
  if(name==='projects')refreshProjects();
  if(name==='leads')loadLeads();
- if(name==='media')renderMedia();
+ if(name==='media')window.STUDIO_MEDIA?.load();
  if(name==='history')loadHistory();
  if(name==='settings')checkConnection(false);
 }
@@ -186,8 +186,22 @@ function renderFields(){
   const lab=el('label','editor-field');lab.append(el('span','',f.label));
   const val=String(state.draft[f.key]??state.defaults[f.key]??'');
   const inp=textInputFor(f,val);
-  if(f.type==='color'){const wrap=el('div','field-row');wrap.append(inp,el('span','field-preview',val));inp.oninput=()=>setStatus($('.field-preview',wrap),inp.value);lab.append(wrap);}
+  if(f.type==='color'){const wrap=el('div','field-row');wrap.append(inp,el('span','field-preview',val));inp.addEventListener('input',()=>setStatus($('.field-preview',wrap),inp.value));lab.append(wrap);}
   else lab.append(inp);
+  const actions=el('div','editor-tools');
+  if(f.type==='image'){
+    actions.append(btn('▣ Dari Pustaka Media','button secondary small',()=>window.STUDIO_MEDIA?.pick(item=>{
+      inp.value=item.url;inp.dispatchEvent(new Event('input',{bubbles:true}));
+      if(f.key==='character.image'){state.draft['character.mode']='static';toast('Gambar baru dipilih. Karakter dialihkan ke mode static hingga animasi dikalibrasi.');}
+    })));
+    const preview=el('img','media-input-preview');preview.alt='Pratinjau '+f.label;preview.loading='lazy';
+    const update=()=>{const path=safeImage(inp.value);preview.hidden=!path;if(path)preview.src=path;};
+    inp.addEventListener('input',update);update();lab.append(preview);
+  }else if(!['color','font','icon','select','number'].includes(f.type)&&!['contact.email','contact.whatsapp','hero.ctaUrl'].includes(f.key)){
+    actions.append(btn('Kosongkan','button subtle small',()=>{inp.value='';inp.dispatchEvent(new Event('input',{bubbles:true}));}));
+  }
+  actions.append(btn('↺ Kembalikan default','button subtle small',()=>{delete state.draft[f.key];state.dirty=true;renderFields();setStatus($('#draftStatus'),'Konten akan kembali ke default setelah disimpan.');}));
+  lab.append(actions);
   const details=(f.type==='image'?'Gunakan URL https:// atau path assets/… pada GitHub.':f.key==='contact.whatsapp'?'Kode negara + nomor, tanpa spasi dan tanpa tanda +.':f.key==='character.mode'?'Aset berbeda pose akan ditampilkan statis tanpa animasi.':f.key==='hero.ctaUrl'?'URL https:// atau #contact / #about / #work.':'');
   if(details)lab.append(el('small','field-help',details));
   area.append(lab);
@@ -212,9 +226,10 @@ function previewSite(){
  toast('Pratinjau lokal aktif. Belum mengubah website publik.');
 }
 async function saveSite(){
- needLogin();validateDraft();
- const button=$('#saveSite');button.disabled=true;setStatus($('#draftStatus'),'Menyimpan konten ke Google Sheets…');
+ const button=$('#saveSite');button.disabled=true;
  try{
+  needLogin();validateDraft();
+  setStatus($('#draftStatus'),'Menyimpan konten ke Google Sheets…');
   const data=await request('saveSite',{token:state.token,expectedSiteRevision:state.siteRevision,content:state.draft});
   state.siteContent=data.content||{};state.siteRevision=String(data.siteRevision||'');
   state.dirty=false;
@@ -287,6 +302,7 @@ function projectFormData(p={}){
  check.append(input,document.createTextNode(' Tampilkan di cincin utama (maksimal 5)'));form.append(check);
  const img=el('img','drawer-preview');img.alt='Pratinjau thumbnail';const src=safeImage(p.thumbnail);if(src)img.src=src;else img.hidden=true;
  form.append(img);form.elements.thumbnail.addEventListener('input',()=>{const src=safeImage(form.elements.thumbnail.value);img.hidden=!src;if(src)img.src=src;});
+ const tools=el('div','editor-tools');tools.append(btn('▣ Pilih dari Pustaka Media','button secondary small',()=>window.STUDIO_MEDIA?.pick(item=>{form.elements.thumbnail.value=item.url;form.elements.thumbnail.dispatchEvent(new Event('input',{bubbles:true}));})));form.append(tools);
  return form;
 }
 function openProject(p={}){
@@ -360,22 +376,6 @@ function openLead(p){
  });
  openDrawer('Pesan dari '+p.nama,'CONTACT INBOX',body,[btn('Tutup','button subtle',closeDrawer),save]);
 }
-function renderMedia(){
- const items=new Map(),add=(src,label)=>{const url=safeImage(src);if(url&&!items.has(url))items.set(url,label);};
- state.projects.forEach(p=>add(p.thumbnail,p.nama));
- add(state.draft['character.image']||'assets/char.webp','Karakter utama');
- add(state.draft['hero.waveImage']||'assets/wave.png','Ilustrasi sapaan');
- add('assets/plate.png','Elemen animasi laptop');
- add('assets/grain.png','Tekstur halaman');
- add(state.draft['seo.ogImage'],'Pratinjau sosial');
- const grid=$('#mediaGrid');grid.replaceChildren();
- for(const [url,label] of items){
-  const card=el('article','media-card'),img=el('img');img.src=url;img.alt=label;img.loading='lazy';
-  card.append(img,el('strong','',label),el('small','',url));
-  card.append(btn('Salin URL / Path','',async()=>{try{await navigator.clipboard.writeText(url);toast('URL gambar disalin.');}catch{toast('Salin manual: '+url,true);}}));
-  grid.append(card);
- }
-}
 async function loadHistory(){
  const body=$('#historyRows');body.replaceChildren(emptyRow(4,'Memuat riwayat…'));
  try{
@@ -433,11 +433,17 @@ function bindEvents(){
  $('#leadFilter').addEventListener('change',e=>{state.leadStatus=e.target.value;state.leadPage=1;loadLeads();});
  $('#leadSearch').addEventListener('input',e=>{clearTimeout(leadTimer);leadTimer=setTimeout(()=>{state.leadSearch=e.target.value;state.leadPage=1;loadLeads();},350);});
  $('#refreshHistory').addEventListener('click',loadHistory);
+ $('#addMediaLink').addEventListener('click',()=>window.STUDIO_MEDIA?.edit());
+ $('#uploadMedia').addEventListener('click',()=>window.STUDIO_MEDIA?.upload());
+ $('#refreshMedia').addEventListener('click',()=>window.STUDIO_MEDIA?.load());
+ $('#mediaFilter').addEventListener('change',e=>{state.mediaFilter=e.target.value;state.mediaPage=1;window.STUDIO_MEDIA?.load();});
+ let mediaTimer=null;$('#mediaSearch').addEventListener('input',e=>{clearTimeout(mediaTimer);mediaTimer=setTimeout(()=>{state.mediaSearch=e.target.value.trim();state.mediaPage=1;window.STUDIO_MEDIA?.load();},300);});
  $('#checkConnection').addEventListener('click',()=>checkConnection(true));
  $('#closeDrawer').addEventListener('click',closeDrawer);$('#drawerBackdrop').addEventListener('click',closeDrawer);
  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
  window.addEventListener('beforeunload',e=>{if(state.dirty){e.preventDefault();e.returnValue='';}});
 }
+window.STUDIO_ADMIN={state,request,toast,el,btn,openDrawer,closeDrawer,drawPager,makeFormField,safeImage,friendlyDate};
 bindEvents();
 configure().then(()=>{setStatus($('#loginMessage'),'');}).catch(error=>setStatus($('#loginMessage'),error.message));
 })();
