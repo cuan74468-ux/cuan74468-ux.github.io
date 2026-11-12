@@ -78,13 +78,15 @@ function replaceActive(slot){
  form.append(hint);
  const preview=el('img','drawer-preview');preview.alt='Pratinjau gambar pengganti';preview.hidden=true;
  const feedback=el('p','drawer-meta','');
+ let imageVerified=false;
  const draw=()=>{
+   imageVerified=false;
    const src=safeImage(input.value.trim());preview.hidden=!src;
    if(src){preview.src=src;feedback.textContent='Memeriksa pratinjau gambar…';}
    else feedback.textContent='Masukkan URL gambar HTTPS atau path assets/ yang valid.';
  };
- preview.onload=()=>{feedback.textContent='Pratinjau tersedia. Konfirmasi untuk mengganti gambar pada lokasi ini.';};
- preview.onerror=()=>{preview.hidden=true;feedback.textContent='Pratinjau gagal. Pastikan URL langsung menuju gambar dan file sudah tersedia di GitHub Pages.';};
+ preview.onload=()=>{imageVerified=true;feedback.textContent='Pratinjau tersedia. Konfirmasi untuk mengganti gambar pada lokasi ini.';};
+ preview.onerror=()=>{imageVerified=false;preview.hidden=true;feedback.textContent='Pratinjau gagal. Pastikan URL langsung menuju gambar dan file sudah tersedia di GitHub Pages.';};
  input.addEventListener('input',draw);form.append(preview,feedback);draw();
  if(slot.key==='character.image'){
    const notice=el('p','inline-notice','Karakter pengganti otomatis menggunakan mode statis. Gerakan mata/jari membutuhkan kalibrasi khusus.');
@@ -98,7 +100,11 @@ function replaceActive(slot){
    pick(item=>{input.value=item.url;input.dispatchEvent(new Event('input'));});
  });
  const save=btn('Simpan Gambar','button primary',async()=>{
-   if(!form.reportValidity())return;save.disabled=true;
+   if(!form.reportValidity())return;
+   const candidate=input.value.trim();
+   if(candidate===String(slot.url||'')){toast('Belum ada perubahan gambar.');return;}
+   if(!imageVerified&&!confirm('Pratinjau gambar baru belum berhasil dimuat. Jika tetap disimpan, gambar publik mungkin rusak. Lanjutkan?'))return;
+   save.disabled=true;
    try{
      const result=await A.saveUsageImage(slot,input.value);
      closeDrawer();usedMedia();
