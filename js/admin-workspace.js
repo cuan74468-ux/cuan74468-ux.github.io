@@ -168,7 +168,13 @@ function renderOverview(data){
 async function loadOverview(){
  if(!isLoggedIn())return;
  try{renderOverview(await request('workspaceOverview',{token:state.token}));}
- catch(error){setStatus($('#overviewHealth'),error.message);toast('Dashboard membutuhkan GAS V3. Perbarui kode backend dan deployment.',true);}
+ catch(error){
+   // A legacy backend may still support editing public projects and site images.
+   renderOverview({projects:state.projects.length,featured:state.projects.filter(p=>p.featured_ring).length,leads:'—',leadStats:{},archivedProjects:'—'});
+   const health=$('#overviewHealth');
+   health.append(el('p','muted','Statistik pesan dan arsip membutuhkan API GAS V3/V4. Ganti thumbnail proyek tetap dapat dicoba melalui menu Gambar yang sedang digunakan.'));
+   health.append(el('p','muted','Detail backend: '+String(error.message||'Permintaan tidak tersedia.')));
+ }
 }
 function resetDraft(repaint=true){
  state.draft={...state.defaults,...state.siteContent};state.dirty=false;
@@ -441,12 +447,24 @@ async function checkConnection(show=true){
  try{
   if(!state.gas)await configure();
   const response=await request('health');
-  const ready=Number(response.version)>=4&&Array.isArray(response.features)&&response.features.includes('contentBlocks')&&response.features.includes('mediaLibrary');
-  const notice=ready?'Backend CMS V4 terdeteksi. Media Library dan Content CRUD tersedia.':'Backend aktif, tetapi masih versi lama. Tempel Code.gs V4 dan Deploy → New version.';
+  const version=Number(response.version)||0;
+  const features=Array.isArray(response.features)?response.features:[];
+  const isV4=version>=4&&features.includes('mediaLibrary')&&features.includes('contentBlocks');
+  const canEditSite=!!state.siteRevision;
+  const notice=isV4
+    ?'GAS V4 dikenali: Pustaka Media dan CRUD konten tersedia. Upload langsung masih memerlukan MEDIA_GITHUB_TOKEN.'
+    :'GAS versi '+(version||'tidak diketahui')+' terdeteksi. Pustaka Media/CRUD lanjutan memerlukan deployment V4. Anda tetap dapat mencoba Ganti Gambar untuk thumbnail proyek'+(canEditSite?' maupun aset halaman':'')+'.';
   setStatus($('#settingsBackend'),state.gas+'\n'+notice+'\nStatus konfigurasi: '+(response.ready?'siap':'perlu pemeriksaan'));
-  setStatus($('#syncLabel'),ready?'Backend V4 aktif':'Backend perlu pembaruan');
-  if(show)toast(notice,!ready);
- }catch(error){setStatus($('#settingsBackend'),error.message);if(show)toast(error.message,true);}
+  setStatus($('#syncLabel'),isV4?'Backend V4 dikenali':'Fitur lanjutan belum aktif');
+  if(show)toast(notice,!isV4);
+ }catch(error){
+  const note=state.projects.length
+    ?'Backend publik mengirim data proyek, tetapi endpoint pemeriksaan versi tidak tersedia. Ganti Gambar proyek tetap dapat dicoba. Untuk Pustaka Media dan CRUD baru, perlu deploy GAS V4.'
+    :'Versi backend belum dapat dibuktikan. Periksa akses GAS atau konfigurasi deployment.';
+  setStatus($('#settingsBackend'),state.gas+'\n'+note+'\nDetail: '+String(error.message||'Koneksi gagal.'));
+  setStatus($('#syncLabel'),'Periksa versi API GAS');
+  if(show)toast(note,true);
+ }
 }
 function bindEvents(){
  $('#loginForm').addEventListener('submit',login);
