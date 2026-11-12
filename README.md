@@ -2,6 +2,36 @@
 
 Portofolio statis: HTML, CSS, JavaScript biasa. Tidak membutuhkan npm, build, Vercel, atau server Node.js untuk hosting. Modul JavaScript statis dimuat berurutan setelah Matter.js 0.19.0 dari cdnjs.
 
+## Studio Admin Workspace V3 — 12 November 2026
+
+**Workspace:** https://cuan74468-ux.github.io/studio-admin.html (login admin privat). Dari situs publik, 3 klik badge status atau URL hash admin lama sekarang membuka workspace ini.
+
+### Fitur
+
+- **Dashboard:** jumlah proyek aktif/unggulan, pesan masuk, pesan perlu tindak lanjut, statistik backend.
+- **Editor halaman:** skema field bersama dengan situs publik; pencarian per label/key, kategori dan pagination (9 field/halaman), pratinjau langsung berbasis iframe asli (desktop/HP), simpan dan terbitkan melalui sesi admin.
+- **Proyek:** CRUD dengan thumbnail, deskripsi, kategori, URL demo, unggulan; tabel pencarian, 8 per halaman. Delete diperlakukan sebagai **arsip lunak**, bukan penghapusan permanen. Arsip dapat dipulihkan.
+- **Inbox pesan:** daftar privat dengan pencarian, filter status dan pagination server 12 pesan/halaman. Admin dapat menandai **baru**, **diproses**, **selesai**, atau **arsip**, dan menyimpan catatan internal. Mengarsipkan tidak menghapus pesan asli.
+- **Media:** katalog thumbnail dan aset yang digunakan; dapat menyalin path/URL untuk penggantian pada editor. **Belum mendukung unggah/hapus file biner langsung dari CMS**; gunakan GitHub Web untuk mengunggah ke `assets/`.
+- **Riwayat:** daftar publikasi per halaman dan pemulihan snapshot versi yang dipilih, dengan pemeriksaan revisi sebelum pemulihan.
+- **Pengaturan:** status koneksi backend, akses GitHub dan Google Sheets. Semua berjalan sebagai HTML/CSS/JavaScript biasa; tanpa Node/Vercel saat runtime.
+
+**Data:** Spreadsheet yang sama, tujuh tab: `projects`, `leads`, `admin`, `site_content`, `site_history`, `lead_meta`, `project_archive`. Dua tab terakhir ditambahkan tanpa menghapus proyek/leads/admin.
+
+### Aktivasi backend V3 WAJIB sebelum fitur CRUD baru bisa dipakai
+
+1. Buka database pemilik → **Ekstensi → Apps Script**. Gunakan proyek skrip yang saat ini melayani URL `/exec` pada `config.json`.
+2. Salin seluruh isi [Code.gs terbaru](https://github.com/cuan74468-ux/cuan74468-ux.github.io/blob/main/Code.gs) menggantikan isi `Code.gs` di editor GAS. Simpan. Jangan hapus file lain seperti `AdminRecovery.gs` (jika sudah digunakan).
+3. Jalankan fungsi `setupDatabase()` satu kali untuk memastikan header pada dua tab tambahan benar. Fungsi memelihara data existing dan tidak mengulang seed proyek yang telah diarsipkan.
+4. **Deploy → Manage deployments → Edit (ikon pensil) → New version → Deploy**. Pertahankan deployment lama agar URL `/exec` tidak berubah. Jangan hanya menekan Save; web app /exec memakai versi deployment terakhir.
+5. Buka https://cuan74468-ux.github.io/studio-admin.html, login dengan **password admin terbaru yang sudah Anda simpan**. Jangan menempelkan password ke percakapan, Google Sheets, GitHub, atau source.
+6. Uji urutan: buka **Karya & Proyek** → edit proyek dummy; **Editor Halaman** → ubah satu kalimat, pratinjau, Simpan & Terbitkan; **Inbox** → ubah status pesan dummy; **Riwayat** → lihat snapshot. Verifikasi di situs publik dan Google Sheets.
+7. Bila muncul "Aksi tidak tersedia" atau "Backend membutuhkan GAS V3", kemungkinan Code.gs belum di-deploy menjadi versi Web App terbaru. Jangan mereset password sebagai solusi untuk error versi backend.
+
+**Batas verifikasi:** GitHub Actions menguji sintaks source dan API melalui mock. Hasil itu tidak membuktikan sesi login, iframe, dan operasi CRUD berjalan di browser dan deployment GAS milik pemilik. Jangan menganggap integrasi live selesai sebelum uji nyata di langkah 6.
+
+---
+
 ## Status implementasi CMS V2 — 12 November 2026
 
 - GitHub Pages tetap berupa HTML/CSS/JavaScript murni tanpa Vercel, npm, atau langkah build.
