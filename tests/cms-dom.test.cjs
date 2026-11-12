@@ -46,7 +46,7 @@ for(const id of ['mediaGrid','mediaUsedGrid','mediaPager','mediaSearch','mediaFi
 assert(adminHtml.includes('src="js/media-manager.js'),'Media manager must load on admin page');
 assert(adminHtml.includes('src="js/content-manager.js'),'Content manager must load on admin page');
 assert(publicHtml.includes('id="customContent"')&&publicHtml.includes('src="js/public-blocks.js'),'Public dynamic content renderer must be mounted');
-assert(mediaJS.includes("window.STUDIO_MEDIA={load,edit,upload,pick}"),'Image upload/picker CRUD module required');
+assert(mediaJS.includes("window.STUDIO_MEDIA={load,edit,upload,pick,usedMedia,replaceActive}"),'Image upload/picker and active replacement module required');
 for(const op of ["mediaList","mediaUpload","mediaSave","mediaArchive","mediaRestore"])
  assert(mediaJS.includes("'"+op+"'"),'Media UI missing protected request: '+op);
 for(const op of ["contentList","contentSave","contentArchive","contentRestore"])
