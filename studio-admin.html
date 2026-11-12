@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#fafaf9">
+<title>Studio Workspace — Linggau AI Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin-workspace.css?v=1">
+</head>
+<body>
+<div id="loginScreen" class="login-screen">
+  <div class="login-brand"><span class="brand-mark">LA</span><span>LINGGAU AI STUDIO <small>PRIVATE WORKSPACE</small></span></div>
+  <main class="login-card" aria-labelledby="loginTitle">
+    <div class="eyebrow">SECURE ACCESS</div>
+    <h1 id="loginTitle">Selamat datang kembali.</h1>
+    <p>Kelola seluruh situs, karya digital, pesan pengunjung, dan publikasi dalam satu ruang kerja.</p>
+    <form id="loginForm">
+      <label>Alamat email<input name="email" type="email" value="peyaje531@gmail.com" autocomplete="username" required></label>
+      <label>Password admin<input name="password" type="password" autocomplete="current-password" required maxlength="200"></label>
+      <button class="button primary full" type="submit">Masuk ke workspace <span aria-hidden="true">↗</span></button>
+      <div id="loginMessage" class="form-status" role="status" aria-live="polite"></div>
+    </form>
+    <div class="login-foot"><span><i class="status-dot"></i> Akses privat melalui Google Apps Script</span><a href="./">← Lihat website</a></div>
+  </main>
+  <p class="login-disclaimer">Konten publik di GitHub Pages · Data dan sesi admin di Google Sheets / Apps Script</p>
+</div>
+<div id="workspace" class="app-shell" hidden>
+  <aside id="sidebar" class="sidebar">
+    <div class="side-brand"><span class="brand-mark">LA</span><div><b>Linggau Studio</b><small>Content Workspace</small></div></div>
+    <div class="side-label">WORKSPACE</div>
+    <nav id="sideNav" class="side-nav" aria-label="Navigasi admin">
+      <button type="button" data-view="overview" class="nav-link is-current"><span class="nav-icon">◫</span> Ringkasan</button>
+      <button type="button" data-view="pages" class="nav-link"><span class="nav-icon">▦</span> Editor Halaman <span class="nav-counter">CMS</span></button>
+      <button type="button" data-view="projects" class="nav-link"><span class="nav-icon">▣</span> Karya & Proyek</button>
+      <button type="button" data-view="leads" class="nav-link"><span class="nav-icon">✉</span> Inbox Pesan <span id="unreadCount" class="nav-counter" hidden></span></button>
+      <button type="button" data-view="media" class="nav-link"><span class="nav-icon">◈</span> Media & Gambar</button>
+      <button type="button" data-view="history" class="nav-link"><span class="nav-icon">◷</span> Riwayat Publikasi</button>
+      <button type="button" data-view="settings" class="nav-link"><span class="nav-icon">⚙</span> Pengaturan</button>
+    </nav>
+    <div class="sidebar-bottom"><a href="./" target="_blank" rel="noopener" class="site-link">↗ Buka situs publik</a><div class="account"><div class="avatar">F</div><div><strong>Administrator</strong><small id="accountEmail">—</small></div><button type="button" id="logoutButton" title="Keluar" aria-label="Keluar">⇥</button></div></div>
+  </aside>
+  <div class="app-main">
+    <header class="topbar"><button id="menuToggle" aria-label="Buka menu" class="mobile-menu" type="button">☰</button><div class="breadcrumb">Linggau AI Studio <span>/</span> <b id="crumb">Ringkasan</b></div><div class="top-actions"><span class="sync-indicator"><i class="status-dot"></i><span id="syncLabel">Memeriksa GAS</span></span><a class="button subtle small" href="./" target="_blank" rel="noopener">Lihat Website ↗</a></div></header>
+    <main id="mainContent">
+      <section id="view-overview" class="view active" aria-labelledby="overviewTitle">
+        <div class="page-heading"><div><p class="eyebrow">STUDIO OVERVIEW</p><h1 id="overviewTitle">Ringkasan workspace</h1><p>Seluruh ekosistem portofolio Anda, dalam satu tempat.</p></div><button class="button secondary" id="refreshOverview" type="button">↻ Sinkronkan</button></div>
+        <div id="metricCards" class="metric-grid">
+          <article class="metric"><span>Proyek aktif</span><b id="metricProjects">—</b><small>Daftar karya & aplikasi</small></article>
+          <article class="metric"><span>Ditampilkan di ring</span><b id="metricFeatured">—</b><small>Kartu utama di halaman depan</small></article>
+          <article class="metric"><span>Pesan masuk</span><b id="metricLeads">—</b><small>Permintaan dari formulir</small></article>
+          <article class="metric"><span>Perlu ditindaklanjuti</span><b id="metricOpen">—</b><small>Pesan baru dan diproses</small></article>
+        </div>
+        <div class="overview-grid"><article class="surface"><div class="section-heading"><h2>Akses cepat</h2><span>Kelola konten utama</span></div><div class="quick-grid"><button type="button" data-go="pages"><b>✎</b><strong>Ubah tampilan website</strong><small>Hero, teks, navigasi, kontak, SEO</small></button><button type="button" data-go="projects"><b>▧</b><strong>Kelola karya</strong><small>Tambah, edit, arsipkan, pulihkan</small></button><button type="button" data-go="leads"><b>✉</b><strong>Tinjau pesan masuk</strong><small>Status, catatan dan tindak lanjut</small></button><button type="button" data-go="history"><b>◷</b><strong>Pulihkan publikasi</strong><small>Riwayat dan rollback konten</small></button></div></article><article class="surface"><div class="section-heading"><h2>Kesehatan sistem</h2></div><div id="overviewHealth" class="health-list"><p>Memeriksa koneksi backend…</p></div><p class="muted micro">Penyimpanan konten menggunakan versi backend yang telah dipublikasikan di Apps Script.</p></article></div>
+      </section>
+      <section id="view-pages" class="view" aria-labelledby="pagesTitle">
+        <div class="page-heading"><div><p class="eyebrow">PAGE CONTENT</p><h1 id="pagesTitle">Editor seluruh halaman</h1><p>Semua field terorganisasi berdasarkan bagian website. Pratinjau tidak langsung memublikasikan.</p></div><div class="head-actions"><button id="resetDraft" type="button" class="button subtle">Batalkan</button><button id="saveSite" type="button" class="button primary">Simpan & Terbitkan</button></div></div>
+        <div id="draftStatus" class="inline-notice">Belum ada perubahan.</div>
+        <div class="editor-layout"><div class="editor-groups"><label class="search-wrap"><span>⌕</span><input id="searchFields" type="search" placeholder="Cari konten..."></label><div id="fieldGroups" class="field-groups"></div></div>
+          <div class="surface field-editor"><div class="field-editor-header"><div><span class="eyebrow">CONTENT EDITOR</span><h2 id="fieldGroupTitle">Pilih bagian</h2></div><span id="fieldGroupCount" class="hint"></span></div><form id="siteFields" autocomplete="off"></form><div id="fieldPager" class="pagination"></div></div>
+        </div>
+        <div class="preview-toolbar"><div><strong>Pratinjau interaktif</strong><small>Memakai halaman asli dan perangkat simulasi</small></div><div class="device-buttons"><button type="button" data-device="desktop" class="is-on">Desktop</button><button type="button" data-device="mobile">Mobile</button><button id="previewChanges" type="button" class="button secondary small">Lihat perubahan</button><button id="resetPreview" type="button" class="button subtle small">Kembali ke publik</button></div></div>
+        <div class="preview-stage"><iframe id="pagePreview" title="Pratinjau situs publik" src="./index.html" loading="lazy"></iframe></div>
+      </section>
+      <section id="view-projects" class="view" aria-labelledby="projectsTitle">
+        <div class="page-heading"><div><p class="eyebrow">PORTFOLIO LIBRARY</p><h1 id="projectsTitle">Karya & proyek</h1><p>Manajemen CRUD portofolio. Penghapusan memakai arsip agar bisa dipulihkan.</p></div><button id="newProject" type="button" class="button primary">+ Tambah Proyek</button></div>
+        <div class="surface list-surface"><div class="list-toolbar"><label class="search-wrap"><span>⌕</span><input id="projectSearch" type="search" placeholder="Cari nama, ID, atau kategori…"></label><div class="segmented"><button type="button" class="is-on" data-project-tab="active">Aktif</button><button type="button" data-project-tab="archive">Arsip</button></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Proyek</th><th>Kategori</th><th>Ring</th><th>Kelola</th></tr></thead><tbody id="projectRows"></tbody></table></div><div id="projectPager" class="pagination"></div></div>
+      </section>
+      <section id="view-leads" class="view" aria-labelledby="leadsTitle">
+        <div class="page-heading"><div><p class="eyebrow">CONTACT INBOX</p><h1 id="leadsTitle">Pesan pengunjung</h1><p>Kelola prospek tanpa membuka tabel privat. Data hanya terlihat setelah login.</p></div><button id="refreshLeads" class="button secondary" type="button">↻ Muat ulang</button></div>
+        <div class="surface list-surface"><div class="list-toolbar"><label class="search-wrap"><span>⌕</span><input id="leadSearch" type="search" placeholder="Cari nama, WhatsApp, kebutuhan…"></label><select id="leadFilter" aria-label="Filter status"><option value="semua">Semua status</option><option value="baru">Baru</option><option value="diproses">Diproses</option><option value="selesai">Selesai</option><option value="arsip">Arsip</option></select></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Pengirim</th><th>Kebutuhan</th><th>Tanggal</th><th>Status</th><th>Detail</th></tr></thead><tbody id="leadRows"></tbody></table></div><div id="leadPager" class="pagination"></div></div>
+      </section>
+      <section id="view-media" class="view" aria-labelledby="mediaTitle">
+        <div class="page-heading"><div><p class="eyebrow">MEDIA LIBRARY</p><h1 id="mediaTitle">Media & aset gambar</h1><p>Lihat seluruh thumbnail proyek dan aset karakter yang digunakan halaman publik.</p></div><a class="button secondary" href="https://github.com/cuan74468-ux/cuan74468-ux.github.io/tree/main/assets" target="_blank" rel="noopener">Buka Folder Assets ↗</a></div><div class="inline-notice">Untuk aset lokal baru, unggah berkas melalui GitHub Web terlebih dahulu. Kemudian gunakan path <code>assets/nama-file.webp</code> dalam editor. CMS tidak meminta izin menulis file ke GitHub.</div><div id="mediaGrid" class="media-grid"></div>
+      </section>
+      <section id="view-history" class="view" aria-labelledby="historyTitle">
+        <div class="page-heading"><div><p class="eyebrow">CONTENT HISTORY</p><h1 id="historyTitle">Riwayat publikasi</h1><p>Catatan perubahan konten. Pemulihan membutuhkan konfirmasi dan menyimpan versi sebelum pemulihan.</p></div><button id="refreshHistory" type="button" class="button secondary">↻ Muat ulang</button></div><div class="surface list-surface"><div class="table-scroll"><table class="data-table"><thead><tr><th>Waktu publikasi</th><th>Editor</th><th>ID versi</th><th>Tindakan</th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyPager" class="pagination"></div></div>
+      </section>
+      <section id="view-settings" class="view" aria-labelledby="settingsTitle"><div class="page-heading"><div><p class="eyebrow">WORKSPACE SETTINGS</p><h1 id="settingsTitle">Pengaturan & integrasi</h1><p>Informasi koneksi dan panduan pengelolaan website.</p></div></div><div class="settings-grid"><article class="surface"><h2>Koneksi backend</h2><p id="settingsBackend" class="word-wrap">Memeriksa…</p><p class="muted">URL GAS diambil otomatis dari <code>config.json</code>. Anda tidak perlu menempelkannya pada setiap login.</p><button id="checkConnection" class="button secondary" type="button">Uji koneksi</button></article><article class="surface"><h2>Pengaturan platform</h2><p>Hosting: GitHub Pages (gratis). Data: Google Sheets + Apps Script. Media lokal: GitHub assets.</p><div class="settings-links"><a href="https://docs.google.com/spreadsheets/d/1VOJV8zmSJXc3afnh6ly34_8Rguue5R2t4EXemjouYeM/edit" target="_blank" rel="noopener">Database Google Sheets ↗</a><a href="https://github.com/cuan74468-ux/cuan74468-ux.github.io" target="_blank" rel="noopener">Source GitHub ↗</a></div></article></div></section>
+    </main>
+  </div>
+</div>
+<div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+<aside id="detailDrawer" class="detail-drawer" hidden aria-label="Editor detail" aria-modal="true" role="dialog"><header><div><p class="eyebrow" id="drawerEyebrow">EDITOR</p><h2 id="drawerTitle">Detail</h2></div><button id="closeDrawer" type="button" class="icon-button" aria-label="Tutup">×</button></header><div id="drawerBody" class="drawer-body"></div><footer id="drawerFooter"></footer></aside>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="js/studio-schema.js?v=3"></script>
+<script src="js/admin-workspace.js?v=1"></script>
+</body></html>
