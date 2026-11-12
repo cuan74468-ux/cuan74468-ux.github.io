@@ -52,9 +52,10 @@
  function createInput(f){
    let input;const value=draft[f.key]??'';
    if(f.type==='textarea'){input=document.createElement('textarea');input.rows=Math.min(6,Math.max(3,Math.ceil(value.length/90)));input.maxLength=6000;}
-   else if(f.type==='select'){
+   else if(f.type==='select'||f.type==='font'){
      input=document.createElement('select');
-     [['animated','Animasi interaktif (aset terkalibrasi)'],['static','Gambar statis'],['hidden','Sembunyikan']].forEach(pair=>{
+     const options=f.type==='font'?[['Geist','Geist — Modern'],['Plus Jakarta Sans','Plus Jakarta Sans — Profesional'],['Instrument Serif','Instrument Serif — Editorial']]:[['animated','Animasi interaktif (aset terkalibrasi)'],['static','Gambar statis'],['hidden','Sembunyikan']];
+     options.forEach(pair=>{
        const option=document.createElement('option');option.value=pair[0];option.textContent=pair[1];input.append(option);
      });
    }else{
