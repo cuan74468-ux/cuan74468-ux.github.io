@@ -78,7 +78,7 @@
  const lead=$('#leadForm');let startedAt=Date.now(),requestId=crypto.randomUUID();
  lead.addEventListener('submit',async e=>{
   e.preventDefault();const button=lead.querySelector('button[type=submit]');button.disabled=true;$('#leadStatus').textContent='Mengirim pesan…';
-  try{await loadPromise;const b=Object.fromEntries(new FormData(lead));b.consent=lead.elements.consent.checked;b.startedAt=startedAt;b.requestId=requestId;const result=await request('lead',b);if(!result.id)throw Error('Penyimpanan belum terkonfirmasi.');$('#leadStatus').textContent='Pesan berhasil tersimpan. Terima kasih, Ferry akan menghubungi Anda.';lead.reset();requestId=crypto.randomUUID();startedAt=Date.now();}
+  try{await loadPromise;const b=Object.fromEntries(new FormData(lead));b.consent=lead.elements.consent.checked;b.startedAt=startedAt;b.requestId=requestId;const result=await request('lead',b);if(!result.id)throw Error('Penyimpanan belum terkonfirmasi.');$('#leadStatus').textContent=String(window.STUDIO.site?.values()['form.submitStatus']||'Pesan berhasil tersimpan. Terima kasih, Ferry akan menghubungi Anda.');lead.reset();requestId=crypto.randomUUID();startedAt=Date.now();}
   catch(err){$('#leadStatus').textContent=err.message||'Belum dapat memastikan pesan tersimpan. Silakan coba lagi.';}finally{button.disabled=false;}
  });
  const admin=document.createElement('dialog');admin.className='admin-modal';admin.id='adminModal';admin.setAttribute('aria-labelledby','adminTitle');
