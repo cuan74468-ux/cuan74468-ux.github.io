@@ -192,8 +192,7 @@ function workspaceLeads_(b){
  const q=String(b.search||'').trim().toLowerCase().slice(0,100),meta=workspaceMeta_();
  const matches=rows_('leads',LEAD_HEADERS).filter(r=>r[0]).reverse().map(r=>{
   const entry=meta[String(r[0])]||{status:'baru',catatan:'',updated_at:''};
-  return Object.fromEntries(LEAD_HEADERS.map((key,i)=>[key,String(r[i]||'')])).valueOf()&&
-   {id:String(r[0]),nama:String(r[1]||''),whatsapp:String(r[2]||''),kebutuhan:String(r[3]||''),pesan:String(r[4]||''),tanggal:String(r[5]||''),status:entry.status,catatan:entry.catatan,updated_at:entry.updated_at};
+  return {id:String(r[0]),nama:String(r[1]||''),whatsapp:String(r[2]||''),kebutuhan:String(r[3]||''),pesan:String(r[4]||''),tanggal:String(r[5]||''),status:entry.status,catatan:entry.catatan,updated_at:entry.updated_at};
  }).filter(x=>(status==='semua'||x.status===status)&&(!q||[x.nama,x.whatsapp,x.kebutuhan,x.pesan].some(v=>v.toLowerCase().includes(q))));
  const total=matches.length,pages=Math.max(1,Math.ceil(total/limit)),current=Math.min(page,pages);
  return {ok:true,items:matches.slice((current-1)*limit,current*limit),page:current,pages,total,limit};
