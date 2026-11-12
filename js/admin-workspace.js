@@ -164,7 +164,7 @@ function textInputFor(f,val){
   input=el('select');const choices=f.type==='font'?[['Geist','Geist — modern'],['Plus Jakarta Sans','Plus Jakarta Sans — profesional'],['Instrument Serif','Instrument Serif — editorial']]:[['animated','Animasi sesuai pose asli'],['static','Gambar statis'],['hidden','Sembunyikan karakter']];
   for(const [value,label] of choices){const option=el('option','',label);option.value=value;input.append(option);}
  }else{
-  input=el('input');input.type=({color:'color',number:'number',email:'email',tel:'tel',link:'url',image:'text'}[f.type]||'text');
+  input=el('input');input.type=f.key==='hero.ctaUrl'?'text':({color:'color',number:'number',email:'email',tel:'tel',link:'url',image:'text'}[f.type]||'text');
   input.maxLength=1500;
   if(f.type==='number'){input.min=f.key==='character.offset'?-40:60;input.max=f.key==='character.offset'?40:140;input.step='1';}
  }
@@ -218,6 +218,8 @@ async function saveSite(){
   const data=await request('saveSite',{token:state.token,expectedSiteRevision:state.siteRevision,content:state.draft});
   state.siteContent=data.content||{};state.siteRevision=String(data.siteRevision||'');
   state.dirty=false;
+  const liveSite=$('#pagePreview')?.contentWindow?.STUDIO?.site;
+  if(liveSite)liveSite.publish(state.siteContent);
   resetDraft();toast('Konten berhasil diterbitkan. Pengunjung melihat perubahan saat memuat halaman.');
  }catch(error){setStatus($('#draftStatus'),'Belum tersimpan: '+error.message);toast(error.message,true);}
  finally{button.disabled=false;}
@@ -235,12 +237,12 @@ function pill(text,kind=''){return el('span','chip-badge '+kind,text);}
 function renderProjects(){
  const records=state.projectTab==='active'?state.projects:state.archive;
  const q=state.projectSearch.trim().toLowerCase();
- const visible=records.filter(p=>[p.nama,p.kategori,p.id].some(v=>String(v||'').toLowerCase().includes(q)));
- const size=8,pages=Math.max(1,Math.ceil(visible.length/size)),page=Math.max(1,Math.min(state.projectPage,pages));
+ const visible=state.projectTab==='archive'?records:records.filter(p=>[p.nama,p.kategori,p.id].some(v=>String(v||'').toLowerCase().includes(q)));
+ const size=8,pages=state.projectTab==='archive'?state.archivePages:Math.max(1,Math.ceil(visible.length/size)),page=Math.max(1,Math.min(state.projectPage,pages));
  state.projectPage=page;
  const tbody=$('#projectRows');tbody.replaceChildren();
  if(!visible.length)tbody.append(emptyRow(4,state.projectTab==='active'?'Belum ada proyek yang cocok.':'Arsip proyek kosong.'));
- for(const p of visible.slice((page-1)*size,page*size)){
+ for(const p of state.projectTab==='archive'?visible:visible.slice((page-1)*size,page*size)){
   const tr=el('tr'),identity=el('td'),wrap=el('div','project-identity');
   const picture=el('img','thumb');const source=safeImage(p.thumbnail);if(source){picture.src=source;picture.loading='lazy';picture.alt='';}else picture.hidden=true;
   const info=el('div');info.append(el('strong','',p.nama),el('small','',p.id));wrap.append(picture,info);identity.append(wrap);
@@ -250,13 +252,13 @@ function renderProjects(){
   actions.append(btn(state.projectTab==='active'?'Edit':'Pulihkan','table-action',()=>state.projectTab==='active'?openProject(p):restoreProject(p)));
   tr.append(identity,category,feat,actions);tbody.append(tr);
  }
- drawPager($('#projectPager'),page,pages,p=>{state.projectPage=p;renderProjects();});
+ drawPager($('#projectPager'),page,pages,p=>{state.projectPage=p;if(state.projectTab==='archive')refreshProjects();else renderProjects();});
 }
 async function refreshProjects(){
  if(state.projectTab==='archive'){
   try{
-   const result=await request('workspaceArchivedProjects',{token:state.token,page:1,limit:30});
-   state.archive=result.items||[];state.archiveTotal=result.total||0;state.archivePages=result.pages||1;renderProjects();
+   const result=await request('workspaceArchivedProjects',{token:state.token,page:state.projectPage,limit:8,search:state.projectSearch});
+   state.archive=result.items||[];state.archiveTotal=result.total||0;state.archivePages=result.pages||1;state.projectPage=result.page||1;renderProjects();
   }catch(error){toast(error.message,true);}
  }else renderProjects();
 }
@@ -392,7 +394,10 @@ async function restoreHistory(p){
  if(!confirm('Pulihkan isi halaman ke snapshot pada '+friendlyDate(p.tanggal)+'? Versi saat ini akan dicadangkan.'))return;
  try{
   const r=await request('workspaceRestoreHistory',{token:state.token,id:p.id,expectedSiteRevision:state.siteRevision});
-  state.siteRevision=r.siteRevision;state.siteContent=r.content||{};resetDraft();
+  state.siteRevision=r.siteRevision;state.siteContent=r.content||{};
+  const liveSite=$('#pagePreview')?.contentWindow?.STUDIO?.site;
+  if(liveSite)liveSite.publish(state.siteContent);
+  resetDraft();
   await loadHistory();toast('Versi halaman berhasil dipulihkan.');
  }catch(error){toast(error.message,true);}
 }
@@ -421,7 +426,7 @@ function bindEvents(){
  $('#resetPreview').addEventListener('click',()=>{const site=$('#pagePreview').contentWindow?.STUDIO?.site;if(site)site.reset();toast('Pratinjau dikembalikan ke konten publik.');});
  $$('[data-device]').forEach(b=>b.addEventListener('click',()=>{$$('[data-device]').forEach(n=>n.classList.toggle('is-on',n===b));$('#pagePreview').classList.toggle('mobile',b.dataset.device==='mobile');}));
  $('#pagePreview').addEventListener('load',onIframeReady);
- $('#projectSearch').addEventListener('input',e=>{state.projectSearch=e.target.value;state.projectPage=1;renderProjects();});
+ $('#projectSearch').addEventListener('input',e=>{state.projectSearch=e.target.value;state.projectPage=1;if(state.projectTab==='archive')refreshProjects();else renderProjects();});
  $$('[data-project-tab]').forEach(b=>b.addEventListener('click',()=>{state.projectTab=b.dataset.projectTab;state.projectPage=1;$$('[data-project-tab]').forEach(n=>n.classList.toggle('is-on',n===b));refreshProjects();}));
  $('#newProject').addEventListener('click',()=>openProject());
  $('#refreshLeads').addEventListener('click',loadLeads);
