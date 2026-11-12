@@ -4,7 +4,7 @@
   'use strict';
   const entries=window.STUDIO_SCHEMA||[];
   const defaults = {
-    'case.catalogIntro':'Karya yang sudah tersedia di katalog. Untuk koleksi lengkap 40+ karya, hubungi Ferry.',
+    'case.catalogIntro':'Jelajahi proyek yang ditampilkan atau hubungi Ferry untuk informasi lainnya.',
     'case.catalogRequest':'Minta katalog lengkap via WhatsApp ↗',
     'character.mode':'animated','character.image':'assets/char.webp','character.scale':'100','character.offset':'0','theme.bodyFont':'Geist','theme.headingFont':'Plus Jakarta Sans','seo.siteName':'Linggau AI Studio','form.submitStatus':'Pesan berhasil tersimpan. Terima kasih, Ferry akan menghubungi Anda.','seo.ogImage':''
   };
