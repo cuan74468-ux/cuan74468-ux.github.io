@@ -99,8 +99,39 @@
  $('#downloadConfig').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({gasUrl:gasURL},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='config.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  function renderList(){const list=$('#adminProjectList');list.replaceChildren();window.STUDIO.projects.forEach(p=>{const b=document.createElement('button');b.type='button';b.className='cms-project-card';const img=document.createElement('img');img.src=window.STUDIO.safeURL(p.thumbnail,true);img.alt='';img.loading='lazy';img.onerror=()=>{img.hidden=true;};const content=document.createElement('span'),title=document.createElement('strong'),category=document.createElement('small');title.textContent=p.nama;category.textContent=p.kategori+(p.featured_ring?' · Cincin utama':' · Katalog');content.append(title,category);b.append(img,content);b.onclick=()=>{editProject(p);list.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');};list.append(b);});}
  function editProject(p){const form=$('#projectForm');form.reset();for(const [key,value] of Object.entries(p)){const el=form.elements.namedItem(key);if(!el)continue;if(el.type==='checkbox')el.checked=value===true;else el.value=value;}form.elements.id.readOnly=!!p.id;}
- function clearSession(){token='';loginExpiry=0;$('#adminPanel').hidden=true;$('#adminLogin').hidden=false;$('#projectForm').reset();window.STUDIO.site?.reset();document.dispatchEvent(new Event('studio:cms-logout'));}
- $('#adminLogin').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;msg('Memeriksa login…');try{await loadPromise;const credentials=Object.fromEntries(new FormData(e.target));const r=await request('login',credentials);token=r.token;loginExpiry=Date.now()+r.expiresIn*1000;e.target.elements.password.value='';await sync();e.target.hidden=true;$('#adminPanel').hidden=false;renderList();editProject({});document.dispatchEvent(new Event('studio:cms-login'));msg('Berhasil masuk. Pilih proyek untuk diedit atau tambahkan proyek baru.');}catch(err){clearSession();e.target.elements.password.value='';msg(err.message);}finally{button.disabled=false;}};
+ function clearSession(){token='';loginExpiry=0;const panel=admin.querySelector('#adminPanel'),login=admin.querySelector('#adminLogin'),form=admin.querySelector('#projectForm');if(panel)panel.hidden=true;if(login)login.hidden=false;form?.reset();window.STUDIO.site?.reset();document.dispatchEvent(new Event('studio:cms-logout'));}
+ $('#adminLogin').onsubmit=async e=>{
+  e.preventDefault();
+  const button=e.target.querySelector('button');
+  button.disabled=true;
+  msg('Memeriksa login…');
+  let authenticated=false;
+  try{
+    await loadPromise;
+    const credentials=Object.fromEntries(new FormData(e.target));
+    const r=await request('login',credentials);
+    if(!r.token||!Number.isFinite(Number(r.expiresIn))||Number(r.expiresIn)<=0)throw Error('Respons login tidak lengkap. Periksa deployment Apps Script.');
+    token=r.token;loginExpiry=Date.now()+Number(r.expiresIn)*1000;
+    authenticated=true;
+    e.target.elements.password.value='';
+    e.target.hidden=true;
+    const panel=admin.querySelector('#adminPanel');
+    if(!panel)throw Error('Struktur panel CMS tidak ditemukan.');
+    panel.hidden=false;
+    renderList();editProject({});
+    document.dispatchEvent(new Event('studio:cms-login'));
+    msg('Login berhasil. Pilih Karya & Proyek atau Seluruh Konten Website.');
+    try{
+      await sync();
+    }catch(err){
+      msg('Login berhasil, tetapi pembaruan data belum tersedia: '+String(err.message||'GAS tidak merespons.'));
+    }
+  }catch(err){
+    if(!authenticated)clearSession();
+    e.target.elements.password.value='';
+    msg((authenticated?'Login berhasil, tetapi editor gagal dimuat: ':'')+String(err.message||'Gagal masuk.'));
+  }finally{button.disabled=false;}
+ };
  $('#newProject').onclick=()=>{editProject({});$('#projectForm').elements.id.focus();};
  $('#refreshProjects').onclick=async()=>{try{await sync();renderList();editProject({});msg('Data terbaru dimuat. Pilih kembali proyek yang akan diedit.');}catch(err){msg(err.message);}};
  $('#logoutAdmin').onclick=async()=>{const t=token;clearSession();try{await request('logout',{token:t});msg('Sesi telah ditutup.');}catch{msg('Sesi lokal ditutup. Sesi server akan kedaluwarsa otomatis.');}};
