@@ -29,3 +29,5 @@ jobs:
         run: node tests/backend.test.cjs
       - name: Verify CMS DOM lifecycle regressions
         run: node tests/cms-dom.test.cjs
+      - name: Verify direct active-media replacement and backwards compatibility
+        run: node --test tests/active-media.test.cjs
