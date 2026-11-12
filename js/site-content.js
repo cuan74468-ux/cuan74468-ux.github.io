@@ -6,7 +6,7 @@
   const defaults = {
     'case.catalogIntro':'Jelajahi proyek yang ditampilkan atau hubungi Ferry untuk informasi lainnya.',
     'case.catalogRequest':'Minta katalog lengkap via WhatsApp ↗',
-    'character.mode':'animated','character.image':'assets/char.webp','character.scale':'100','character.offset':'0','theme.bodyFont':'Geist','theme.headingFont':'Plus Jakarta Sans','seo.siteName':'Linggau AI Studio','form.submitStatus':'Pesan berhasil tersimpan. Terima kasih, Ferry akan menghubungi Anda.','seo.ogImage':''
+    'character.mode':'animated','character.image':'assets/char.webp','character.scale':'100','character.offset':'0','theme.bodyFont':'Geist','theme.headingFont':'Plus Jakarta Sans','seo.siteName':'Linggau AI Studio','form.submitStatus':'Pesan Anda berhasil dikirim. Terima kasih, saya akan menghubungi Anda.','seo.ogImage':''
   };
   const themeMap={'theme.paper':'--paper','theme.ink':'--ink','theme.sun':'--sun','theme.rose':'--rose','theme.sky':'--sky','theme.live':'--live'};
   function direct(el,last=false){
