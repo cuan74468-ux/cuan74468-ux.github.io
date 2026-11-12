@@ -160,8 +160,8 @@ function renderGroups(){
 function textInputFor(f,val){
  let input;
  if(f.type==='textarea'){input=el('textarea');input.rows=Math.max(3,Math.min(7,Math.ceil(val.length/110)));input.maxLength=6000;}
- else if(f.type==='select'||f.type==='font'){
-  input=el('select');const choices=f.type==='font'?[['Geist','Geist — modern'],['Plus Jakarta Sans','Plus Jakarta Sans — profesional'],['Instrument Serif','Instrument Serif — editorial']]:[['animated','Animasi sesuai pose asli'],['static','Gambar statis'],['hidden','Sembunyikan karakter']];
+ else if(f.type==='select'||f.type==='font'||f.type==='icon'){
+  input=el('select');const choices=f.type==='font'?[['Geist','Geist — modern'],['Plus Jakarta Sans','Plus Jakarta Sans — profesional'],['Instrument Serif','Instrument Serif — editorial']]:f.type==='icon'?[['#i-claude','Claude'],['#i-figma','Figma'],['#i-perplexity','Perplexity'],['#i-codex','Codex'],['#i-notebooklm','NotebookLM'],['#i-openai','OpenAI'],['#i-midjourney','Midjourney'],['#i-gmail','Gmail'],['#i-linkedin','LinkedIn']]:[['animated','Animasi sesuai pose asli'],['static','Gambar statis'],['hidden','Sembunyikan karakter']];
   for(const [value,label] of choices){const option=el('option','',label);option.value=value;input.append(option);}
  }else{
   input=el('input');input.type=f.key==='hero.ctaUrl'?'text':({color:'color',number:'number',email:'email',tel:'tel',link:'url',image:'text'}[f.type]||'text');
