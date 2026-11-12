@@ -25,4 +25,16 @@ assert(schema.includes('window.STUDIO_SCHEMA'),'Editor needs shared field defini
 assert(renderer.includes('window.STUDIO_SCHEMA'),'Public renderer must use the shared field schema');
 // Preserve a guard for the retired editor source while old popup code remains in the repository.
 assert(editor.indexOf("const logout=panel.querySelector('#logoutAdmin')")<editor.indexOf('[actions,projectList,projectForm].forEach'));
+const vm=require('node:vm');
+const scope={window:{}};vm.runInNewContext(schema,scope);
+const fields=scope.window.STUDIO_SCHEMA,keys=fields.map(f=>f.key);
+assert(fields.length>=95,'All public sections need a comprehensive editable field map');
+assert.equal(new Set(keys).size,keys.length,'Each field key must be unique');
+for(const key of ['hero.headline2','hero.ctaUrl','about.bio1','process.step1Title','skills.chip1','skills.color1','contact.tile1Icon','form.needOption1','footer.copyright','character.image','seo.ogImage','theme.headingFont']){
+ assert(keys.includes(key),'Required editable public element: '+key);
+}
+assert(adminJS.includes("workspaceArchiveProject"),'Archive CRUD must call protected backend action');
+assert(adminJS.includes("workspaceSaveLead"),'Inbox status updates must call protected backend action');
+assert(adminJS.includes("workspaceRestoreProject"),'Archived projects must be restorable');
+
 console.log('PASS: standalone workspace navigation, authenticated client operations, shared schema, and legacy fallback');
