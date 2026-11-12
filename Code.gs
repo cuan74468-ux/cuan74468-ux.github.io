@@ -22,7 +22,7 @@ function projects_(){return rows_('projects',PROJECT_HEADERS).filter(r=>r[0]).ma
 function siteState_(){
  const tab=database_().getSheetByName('site_content');
  const rows=tab&&tab.getLastRow()>1?tab.getRange(2,1,tab.getLastRow()-1,2).getValues().filter(r=>r[0]):[];
- const content={};rows.forEach(r=>{const key=String(r[0]);if(/^[a-z][a-z0-9_.-]{1,79}$/.test(key))content[key]=String(r[1]??'');});
+ const content={};rows.forEach(r=>{const key=String(r[0]);if(/^[a-z][a-zA-Z0-9_.-]{1,79}$/.test(key))content[key]=String(r[1]??'');});
  return {content:content,siteRevision:digest_(JSON.stringify(content))};
 }
 function publicData_(){const projects=projects_();return {ok:true,projects:projects,revision:digest_(JSON.stringify(projects)),...siteState_()};}
@@ -95,7 +95,7 @@ function lead_(b){
 /** CMS v2: public content is plain text; HTML, scripts and executable templates are not accepted. */
 function checkSiteContent_(input){
  if(!input||Array.isArray(input)||typeof input!=='object')throw Error('Konten tidak valid.');
- const allowed=/^(seo|nav|hero|about|process|skills|contact|form|footer|case|character|theme)\.[a-z0-9_.-]{1,70}$/;
+ const allowed=/^(seo|nav|hero|about|process|skills|contact|form|footer|case|character|theme)\.[a-zA-Z0-9_.-]{1,70}$/;
  const entries=Object.entries(input);
  if(entries.length>180)throw Error('Jumlah field melebihi batas.');
  const result={};let total=0;
