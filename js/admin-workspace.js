@@ -443,6 +443,38 @@ async function restoreHistory(p){
   await loadHistory();toast('Versi halaman berhasil dipulihkan.');
  }catch(error){toast(error.message,true);}
 }
+
+async function diagnoseModules(){
+ const button=$('#diagnoseModules'),target=$('#diagnosticResults');
+ if(!button||!target)return;
+ button.disabled=true;button.textContent='Memeriksa modul…';
+ target.replaceChildren();
+ const checks=[
+   {name:'Data proyek dan halaman publik',action:'projects',body:null,verify:r=>Array.isArray(r.projects)},
+   {name:'Editor konten halaman',action:'projects',body:null,verify:r=>typeof r.siteRevision==='string'&&r.content&&typeof r.content==='object'},
+   {name:'Ringkasan admin',action:'workspaceOverview',body:{token:state.token},verify:r=>r.account&&typeof r.projects==='number'},
+   {name:'Inbox pesan',action:'workspaceLeads',body:{token:state.token,page:1,limit:5,status:'semua'},verify:r=>Array.isArray(r.items)},
+   {name:'Riwayat publikasi',action:'workspaceHistory',body:{token:state.token,page:1},verify:r=>Array.isArray(r.items)},
+   {name:'Pustaka Media',action:'mediaList',body:{token:state.token,page:1,limit:6,status:'active'},verify:r=>Array.isArray(r.items)},
+   {name:'Blok konten dinamis',action:'contentList',body:{token:state.token,page:1,limit:5,status:'all'},verify:r=>Array.isArray(r.items)}
+ ];
+ try{
+   for(const item of checks){
+     const line=el('div','diagnostic-row'),label=el('strong','',item.name),value=el('span','diagnostic-pending','Memeriksa…');
+     line.append(label,value);target.append(line);
+     try{
+       const response=await request(item.action,item.body);
+       if(item.verify(response)){value.textContent='Tersambung';value.className='diagnostic-ok';}
+       else{value.textContent='Respons belum lengkap';value.className='diagnostic-warn';}
+     }catch(error){
+       const message=String(error.message||'Akses gagal');
+       value.textContent=message.includes('Aksi tidak tersedia')?'Belum didukung deployment GAS':message;
+       value.className='diagnostic-warn';
+     }
+   }
+ }finally{button.disabled=false;button.textContent='Periksa Semua Modul';}
+}
+
 async function checkConnection(show=true){
  try{
   if(!state.gas)await configure();
@@ -493,6 +525,7 @@ function bindEvents(){
  $('#mediaFilter').addEventListener('change',e=>{state.mediaFilter=e.target.value;state.mediaPage=1;window.STUDIO_MEDIA?.load();});
  let mediaTimer=null;$('#mediaSearch').addEventListener('input',e=>{clearTimeout(mediaTimer);mediaTimer=setTimeout(()=>{state.mediaSearch=e.target.value.trim();state.mediaPage=1;window.STUDIO_MEDIA?.load();},300);});
  $('#checkConnection').addEventListener('click',()=>checkConnection(true));
+ $('#diagnoseModules').addEventListener('click',diagnoseModules);
  $('#closeDrawer').addEventListener('click',closeDrawer);$('#drawerBackdrop').addEventListener('click',closeDrawer);
  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
  window.addEventListener('beforeunload',e=>{if(state.dirty){e.preventDefault();e.returnValue='';}});
