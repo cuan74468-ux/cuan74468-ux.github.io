@@ -19,14 +19,20 @@ function validUrl_(s,relative){
  if(!/^https:\/\/[^\s<>"'\\]+$/i.test(s))throw Error('URL harus HTTPS.');return s;
 }
 function projects_(){return rows_('projects',PROJECT_HEADERS).filter(r=>r[0]).map(r=>Object.fromEntries(PROJECT_HEADERS.map((k,i)=>[k,k==='featured_ring'?(r[i]===true||String(r[i]).toLowerCase()==='true'):String(r[i])])));}
-function publicData_(){const projects=projects_();return {ok:true,projects:projects,revision:digest_(JSON.stringify(projects))};}
+function siteState_(){
+ const tab=database_().getSheetByName('site_content');
+ const rows=tab&&tab.getLastRow()>1?tab.getRange(2,1,tab.getLastRow()-1,2).getValues().filter(r=>r[0]):[];
+ const content={};rows.forEach(r=>{const key=String(r[0]);if(/^[a-z][a-z0-9_.-]{1,79}$/.test(key))content[key]=String(r[1]??'');});
+ return {content:content,siteRevision:digest_(JSON.stringify(content))};
+}
+function publicData_(){const projects=projects_();return {ok:true,projects:projects,revision:digest_(JSON.stringify(projects)),...siteState_()};}
 /** Idempotent: create missing headers and seeds, never clear leads or overwrite existing projects. */
 function setupDatabase(){
  const lock=LockService.getScriptLock();lock.waitLock(20000);
  try{
   const db=database_(),props=PropertiesService.getScriptProperties();
   if(!props.getProperty('ADMIN_PEPPER'))props.setProperty('ADMIN_PEPPER',Utilities.getUuid()+Utilities.getUuid());
-  [['projects',PROJECT_HEADERS],['leads',LEAD_HEADERS],['admin',ADMIN_HEADERS]].forEach(([name,headers])=>{
+  [['projects',PROJECT_HEADERS],['leads',LEAD_HEADERS],['admin',ADMIN_HEADERS],['site_content',['key','value','updated_at']],['site_history',['id','tanggal','admin','snapshot_json']]].forEach(([name,headers])=>{
    let sh=db.getSheetByName(name);if(!sh)sh=db.insertSheet(name);
    if(sh.getLastRow()===0)sh.getRange(1,1,1,headers.length).setValues([headers]);
    if(JSON.stringify(sh.getRange(1,1,1,headers.length).getValues()[0])!==JSON.stringify(headers))throw Error('Header '+name+' berbeda; tidak diubah.');
@@ -49,7 +55,7 @@ function setupDatabase(){
   SpreadsheetApp.flush();return {ok:true,projects:projects_().length,spreadsheet:db.getUrl()};
  }finally{lock.releaseLock();}
 }
-function health_(){let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5;}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:2,ready:ready});}
+function health_(){let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5&&!!database_().getSheetByName('site_content');}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:2,ready:ready});}
 function doGet(e){try{const action=(e&&e.parameter&&e.parameter.action)||'projects';if(action==='projects')return json_(publicData_());if(action==='health')return health_();return json_({ok:false,error:'Aksi tidak tersedia.'});}catch(err){return json_({ok:false,error:'Database belum siap. Jalankan setupDatabase.'});}}
 function session_(token){if(typeof token!=='string'||token.length>200)throw Error('Sesi berakhir. Login kembali.');const s=CacheService.getScriptCache().get('session:'+digest_(token));if(!s)throw Error('Sesi berakhir. Login kembali.');return JSON.parse(s);}
 function login_(b){
@@ -85,12 +91,72 @@ function lead_(b){
  const props=PropertiesService.getScriptProperties(),day=Utilities.formatDate(new Date(),'Asia/Jakarta','yyyy-MM-dd');let quota=JSON.parse(props.getProperty('LEAD_QUOTA')||'{}');if(quota.day!==day)quota={day:day,count:0};if(quota.count>=100)throw Error('Form sedang penuh. Hubungi melalui WhatsApp.');
  sh.appendRow([id,literal_(nama),literal_(wa),literal_(need),literal_(pesan),new Date().toISOString()]);quota.count++;props.setProperty('LEAD_QUOTA',JSON.stringify(quota));cache.put(phoneKey,'1',60);SpreadsheetApp.flush();return {ok:true,id:id};
 }
+
+/** CMS v2: public content is plain text; HTML, scripts and executable templates are not accepted. */
+function checkSiteContent_(input){
+ if(!input||Array.isArray(input)||typeof input!=='object')throw Error('Konten tidak valid.');
+ const allowed=/^(seo|nav|hero|about|process|skills|contact|form|footer|case|character|theme)\.[a-z0-9_.-]{1,70}$/;
+ const entries=Object.entries(input);
+ if(entries.length>180)throw Error('Jumlah field melebihi batas.');
+ const result={};let total=0;
+ for(const [key,raw] of entries){
+  if(!allowed.test(key)||typeof raw!=='string')throw Error('Field konten tidak dikenal.');
+  const value=raw.trim(),max=key.includes('paragraph')||key.includes('.bio')||key.includes('.desc')||key.includes('.body')?6000:1500;
+  if(value.length>max)throw Error('Teks terlalu panjang: '+key);
+  if(key.startsWith('theme.')&&!/^#[0-9a-fA-F]{6}$/.test(value))throw Error('Format warna harus #RRGGBB.');
+  if(key==='character.mode'&&!['animated','static','hidden'].includes(value))throw Error('Mode karakter tidak dikenal.');
+  if(key==='character.scale'&&(!/^\d{2,3}$/.test(value)||+value<60||+value>140))throw Error('Ukuran karakter 60–140%.');
+  if(key==='character.offset'&&(!/^-?\d{1,2}$/.test(value)||+value< -40||+value>40))throw Error('Posisi karakter -40 hingga 40.');
+  if(key==='contact.email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))throw Error('Email tidak valid.');
+  if(key==='contact.whatsapp'&&!/^\d{9,16}$/.test(value))throw Error('Nomor WhatsApp harus kode negara dan angka saja.');
+  if(key.endsWith('.image')||key.endsWith('.thumbnail')||key==='hero.waveImage'){
+   if(!value||!(validUrl_(value,true)))throw Error('URL gambar tidak valid.');
+   if(key==='character.image'&&!/^(?:\.\/)?assets\/[a-zA-Z0-9._/-]+$/.test(value)&&!/^https:\/\//.test(value))throw Error('Gambar karakter tidak valid.');
+  }
+  if(key.endsWith('.url')||key.endsWith('.link')){if(!value||!(validUrl_(value,false)))throw Error('URL tautan tidak valid.');}
+  total+=key.length+value.length;if(total>120000)throw Error('Ukuran konten terlalu besar.');
+  result[key]=value;
+ }
+ return result;
+}
+function writeSite_(content,editor){
+ const sh=sheet_('site_content',['key','value','updated_at']);
+ const prior=siteState_(),history=sheet_('site_history',['id','tanggal','admin','snapshot_json']);
+ const snapshot=JSON.stringify(prior.content);
+ if(snapshot.length>49000)throw Error('Riwayat konten terlalu besar untuk satu sel.');
+ const timestamp=new Date().toISOString();
+ history.appendRow([Utilities.getUuid(),timestamp,literal_(editor),literal_(snapshot)]);
+ const rows=Object.entries(content).sort((a,b)=>a[0].localeCompare(b[0])).map(([key,value])=>[literal_(key),literal_(value),timestamp]);
+ const oldCount=Math.max(0,sh.getLastRow()-1);
+ if(rows.length>0)sh.getRange(2,1,rows.length,3).setValues(rows);
+ if(oldCount>rows.length)sh.getRange(rows.length+2,1,oldCount-rows.length,3).clearContent();
+ SpreadsheetApp.flush();
+ return publicData_();
+}
+function saveSite_(b){
+ const editor=session_(b.token);
+ const current=siteState_();
+ if(typeof b.expectedSiteRevision!=='string'||b.expectedSiteRevision!==current.siteRevision)throw Error('Konten telah berubah di perangkat lain. Muat ulang dahulu.');
+ return writeSite_(checkSiteContent_(b.content),editor.email);
+}
+function revertSite_(b){
+ const editor=session_(b.token),cur=siteState_();
+ if(b.expectedSiteRevision!==cur.siteRevision)throw Error('Konten telah berubah. Muat ulang dahulu.');
+ const history=sheet_('site_history',['id','tanggal','admin','snapshot_json']);
+ if(history.getLastRow()<2)throw Error('Belum ada versi sebelumnya.');
+ const last=history.getRange(history.getLastRow(),1,1,4).getValues()[0];
+ const restored=checkSiteContent_(JSON.parse(String(last[3])));
+ history.deleteRow(history.getLastRow());
+ // Store the current version as the new rollback target.
+ return writeSite_(restored,editor.email);
+}
+
 function doPost(e){
  let lock;
  try{
   if(!e||!e.postData||e.postData.contents.length>20000)throw Error('Permintaan tidak valid.');const b=JSON.parse(e.postData.contents);
   lock=LockService.getScriptLock();lock.waitLock(15000);let result;
-  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
+  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
   return json_(result);
  }catch(err){return json_({ok:false,error:String(err.message||'Permintaan gagal.').slice(0,200)});}finally{if(lock)lock.releaseLock();}
 }
