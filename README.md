@@ -35,6 +35,20 @@ Jika CMS menampilkan "Backend CMS v2 perlu diaktifkan", URL GAS sudah terbaca te
 - **Karakter:** mode `animated` hanya sesuai untuk sprite dengan struktur/koordinat asli. Karakter gambar lain muncul sebagai gambar statis; mode `hidden` menyembunyikannya. Posisi horizontal dan ukuran juga dapat diatur.
 - **Chip fisika:** jumlah tetap sepuluh; judul dapat diedit dan tata letak memakai indeks stabil, bukan label yang dapat diganti.
 
+## Pemulihan login admin (tanpa membocorkan password)
+
+Jika password CMS tidak cocok, jangan menaruh password baru di chat, repo, ataupun URL. Kolom `admin.password` adalah verifier HMAC privat dan tidak dapat dibaca kembali menjadi password asli. Paling aman lakukan reset dari Apps Script **yang saat ini digunakan oleh deployment website**.
+
+1. Buka spreadsheet proyek → **Ekstensi → Apps Script**; pastikan ini proyek Apps Script yang menangani URL web app dari `config.json`.
+2. Klik **+** di samping Files/Berkas → **Script**, beri nama **AdminRecovery**.
+3. Salin isi [AdminRecovery.gs](https://github.com/cuan74468-ux/cuan74468-ux.github.io/blob/main/AdminRecovery.gs) ke editor file itu, lalu simpan. **Jangan** menghapus file `Code.gs`.
+4. Di menu **Project Settings / Setelan proyek (ikon roda gigi) → Script Properties**, pilih **Add script property**. Nama tepat: `ADMIN_RESET_PASSWORD`. Nilainya: password **baru dan unik** sepanjang minimal 14 karakter. Simpan nilainya hanya di sana (bukan di chat).
+5. Kembali ke editor, pilih fungsi `resetStudioAdminPassword` dari daftar fungsi lalu klik **Run/Jalankan**, setujui otorisasi jika diminta.
+6. Bila berhasil, fungsi mengubah **hanya** verifier password admin pada kolom B, menghapus properti reset sekali-pakai, dan membersihkan penghitung percobaan login. **Tidak menghapus proyek maupun leads.**
+7. Buka https://cuan74468-ux.github.io/#/linggau-core-session dan login dengan password baru. Anda tidak perlu menempel URL GAS. Jika CMS seluruh konten menyatakan backend V2 belum aktif, deploy Code.gs versi terbaru secara terpisah.
+
+Penting: menjalankan fungsi reset pada Apps Script milik proyek lain tidak akan memulihkan login di deployment ini. Tidak perlu mengubah atau membagikan pepper dan tidak perlu mengedit hash admin secara manual. Sesi lama dapat tetap berlaku sampai kedaluwarsa maksimal dua jam; pemulihan ini tidak mengklaim mencabut seluruh token yang telah terbit.
+
 ## Keamanan data CMS
 
 - Google Sheet **harus tetap privat**. Tab `admin` dan `site_history` tidak disajikan ke publik.
