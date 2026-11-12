@@ -263,21 +263,36 @@ function pick(onSelect){
  const results=el('div','media-picker-grid'),pager=el('div','pagination');wrap.append(search,results,pager);
  let page=1,q='',timeout=null;
  const render=async()=>{
-  results.replaceChildren(el('p','muted','Memuat media…'));
-  try{
-   const r=await request('mediaList',{token:state.token,page,limit:18,search:q,status:'active'});
-   results.replaceChildren();const urls=new Set();
-   const add=item=>{if(!safeImage(item.url)||urls.has(item.url))return;urls.add(item.url);
-    const card=imageCard(item);card.append(btn('Pilih gambar','button secondary small',()=>{onSelect(item);back();}));results.append(card);
+   results.replaceChildren(el('p','muted','Memuat pilihan gambar…'));
+   const candidateMap=new Map();
+   const add=item=>{
+     if(!safeImage(item.url)||candidateMap.has(item.url))return;
+     if(q&&!String(item.title||'').toLowerCase().includes(q.toLowerCase())&&!String(item.url).toLowerCase().includes(q.toLowerCase()))return;
+     candidateMap.set(item.url,item);
    };
-   if(!q&&page===1){
-    for(const p of state.projects)add({title:p.nama,url:p.thumbnail});
-    for(const key of ['character.image','hero.waveImage','seo.ogImage'])add({title:key,url:state.draft[key]||state.siteContent[key]});
+   // Previously published/project assets remain selectable even without GAS V4.
+   for(const project of state.projects)add({title:project.nama,url:project.thumbnail});
+   for(const [key,title,fallback] of [
+     ['character.image','Karakter utama','assets/char.webp'],
+     ['hero.waveImage','Ikon sapaan','assets/wave.png']
+   ])add({title,url:state.siteContent[key]||state.defaults[key]||fallback});
+   let error='';
+   try{
+     const r=await request('mediaList',{token:state.token,page,limit:18,search:q,status:'active'});
+     (r.items||[]).forEach(add);
+     drawPager(pager,r.page||page,r.pages||1,n=>{page=n;render();});
+   }catch(e){
+     error=String(e.message||'Pustaka media belum aktif.');
+     pager.replaceChildren();
    }
-   (r.items||[]).forEach(add);
-   if(!results.children.length)results.append(el('p','empty-state','Belum ada media yang cocok.'));
-   drawPager(pager,r.page||page,r.pages||1,n=>{page=n;render();});
-  }catch(error){results.replaceChildren(el('p','empty-state','Gagal memuat media: '+error.message));}
+   results.replaceChildren();
+   for(const item of candidateMap.values()){
+     const card=imageCard(item);
+     card.append(btn('Gunakan gambar ini','button secondary small',()=>{onSelect(item);back();}));
+     results.append(card);
+   }
+   if(!candidateMap.size)results.append(el('p','empty-state','Tidak ada gambar yang cocok. Tempel URL HTTPS/path assets secara manual.'));
+   if(error)results.prepend(el('p','media-picker-note','Pustaka tambahan belum aktif. Gambar yang sudah ada tetap dapat dipilih; atau tempel URL baru. ('+error+')'));
  };
  search.addEventListener('input',()=>{clearTimeout(timeout);timeout=setTimeout(()=>{q=search.value.trim();page=1;render();},300);});
  openDrawer('Pilih Gambar','MEDIA PICKER',wrap,[btn('Kembali','button subtle',back)]);
