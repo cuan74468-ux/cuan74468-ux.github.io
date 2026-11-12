@@ -39,7 +39,10 @@ function setupDatabase(){
    sh.setFrozenRows(1);sh.getRange(1,1,1,headers.length).setBackground('#eeeeee').setFontWeight('bold');
   });
   const ps=sheet_('projects',PROJECT_HEADERS),ids=rows_('projects',PROJECT_HEADERS).map(r=>String(r[0]));
-  const missing=DEFAULT_PROJECTS.filter(p=>!ids.includes(p.id));
+  // Seed initial portfolio only on a truly new empty database. An intentionally
+  // archived default project must never be recreated by a later setup run.
+  const archivedIds=rows_('project_archive',PROJECT_HEADERS.concat(['archived_at','archived_by'])).map(r=>String(r[0]));
+  const missing=ps.getLastRow()===1&&!archivedIds.length?DEFAULT_PROJECTS.filter(p=>!ids.includes(p.id)):[];
   if(missing.length)ps.getRange(ps.getLastRow()+1,1,missing.length,8).setValues(missing.map(p=>PROJECT_HEADERS.map(k=>p[k])));
   const adm=sheet_('admin',ADMIN_HEADERS);
   if(adm.getLastRow()<2){
@@ -103,18 +106,22 @@ function checkSiteContent_(input){
   if(!allowed.test(key)||typeof raw!=='string')throw Error('Field konten tidak dikenal.');
   const value=raw.trim(),max=key.includes('paragraph')||key.includes('.bio')||key.includes('.desc')||key.includes('.body')?6000:1500;
   if(value.length>max)throw Error('Teks terlalu panjang: '+key);
-  if(key.startsWith('theme.')&&!['theme.bodyFont','theme.headingFont'].includes(key)&&!/^#[0-9a-fA-F]{6}$/.test(value))throw Error('Format warna harus #RRGGBB.');
+  if((key.startsWith('theme.')&&!['theme.bodyFont','theme.headingFont'].includes(key)||/^skills\.color\d+$/.test(key))&&!/^#[0-9a-fA-F]{6}$/.test(value))throw Error('Format warna harus #RRGGBB.');
   if(['theme.bodyFont','theme.headingFont'].includes(key)&&!['Geist','Plus Jakarta Sans','Instrument Serif'].includes(value))throw Error('Pilihan font tidak didukung.');
   if(key==='character.mode'&&!['animated','static','hidden'].includes(value))throw Error('Mode karakter tidak dikenal.');
   if(key==='character.scale'&&(!/^\d{2,3}$/.test(value)||+value<60||+value>140))throw Error('Ukuran karakter 60–140%.');
   if(key==='character.offset'&&(!/^-?\d{1,2}$/.test(value)||+value< -40||+value>40))throw Error('Posisi karakter -40 hingga 40.');
   if(key==='contact.email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))throw Error('Email tidak valid.');
   if(key==='contact.whatsapp'&&!/^\d{9,16}$/.test(value))throw Error('Nomor WhatsApp harus kode negara dan angka saja.');
-  if(key.endsWith('.image')||key.endsWith('.thumbnail')||key==='hero.waveImage'){
-   if(!value||!(validUrl_(value,true)))throw Error('URL gambar tidak valid.');
+  if(key.endsWith('.image')||key.endsWith('.thumbnail')||key==='hero.waveImage'||key==='seo.ogImage'){
+   if(key!=='seo.ogImage'&&!value)throw Error('URL gambar wajib diisi.');if(value)validUrl_(value,true);
    if(key==='character.image'&&!/^(?:\.\/)?assets\/[a-zA-Z0-9._/-]+$/.test(value)&&!/^https:\/\//.test(value))throw Error('Gambar karakter tidak valid.');
   }
-  if(key.endsWith('.url')||key.endsWith('.link')){if(!value||!(validUrl_(value,false)))throw Error('URL tautan tidak valid.');}
+  if(key.endsWith('.url')||key.endsWith('.link')||key==='hero.ctaUrl'){
+   if(!value)throw Error('URL tautan wajib diisi.');
+   if(key==='hero.ctaUrl'&&/^#(?:contact|about|work)$/.test(value)){}
+   else validUrl_(value,false);
+  }
   total+=key.length+value.length;if(total>38000)throw Error('Ukuran konten terlalu besar.');
   result[key]=value;
  }
