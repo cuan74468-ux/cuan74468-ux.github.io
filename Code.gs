@@ -103,7 +103,8 @@ function checkSiteContent_(input){
   if(!allowed.test(key)||typeof raw!=='string')throw Error('Field konten tidak dikenal.');
   const value=raw.trim(),max=key.includes('paragraph')||key.includes('.bio')||key.includes('.desc')||key.includes('.body')?6000:1500;
   if(value.length>max)throw Error('Teks terlalu panjang: '+key);
-  if(key.startsWith('theme.')&&!/^#[0-9a-fA-F]{6}$/.test(value))throw Error('Format warna harus #RRGGBB.');
+  if(key.startsWith('theme.')&&!['theme.bodyFont','theme.headingFont'].includes(key)&&!/^#[0-9a-fA-F]{6}$/.test(value))throw Error('Format warna harus #RRGGBB.');
+  if(['theme.bodyFont','theme.headingFont'].includes(key)&&!['Geist','Plus Jakarta Sans','Instrument Serif'].includes(value))throw Error('Pilihan font tidak didukung.');
   if(key==='character.mode'&&!['animated','static','hidden'].includes(value))throw Error('Mode karakter tidak dikenal.');
   if(key==='character.scale'&&(!/^\d{2,3}$/.test(value)||+value<60||+value>140))throw Error('Ukuran karakter 60–140%.');
   if(key==='character.offset'&&(!/^-?\d{1,2}$/.test(value)||+value< -40||+value>40))throw Error('Posisi karakter -40 hingga 40.');
