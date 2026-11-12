@@ -37,4 +37,23 @@ assert(adminJS.includes("workspaceArchiveProject"),'Archive CRUD must call prote
 assert(adminJS.includes("workspaceSaveLead"),'Inbox status updates must call protected backend action');
 assert(adminJS.includes("workspaceRestoreProject"),'Archived projects must be restorable');
 
+
+// V4 CRUD UI contract: every interactive feature must be mounted as a real script.
+const mediaJS=read('js/media-manager.js'),contentJS=read('js/content-manager.js'),publicBlocksJS=read('js/public-blocks.js');
+for(const id of ['mediaGrid','mediaUsedGrid','mediaPager','mediaSearch','mediaFilter','addMediaLink','uploadMedia','newContentBlock','contentSearch','contentFilter','contentBlockList','contentBlockPager']){
+ assert(adminHtml.includes('id="'+id+'"'),'CMS media/content control not mounted: '+id);
+}
+assert(adminHtml.includes('src="js/media-manager.js'),'Media manager must load on admin page');
+assert(adminHtml.includes('src="js/content-manager.js'),'Content manager must load on admin page');
+assert(publicHtml.includes('id="customContent"')&&publicHtml.includes('src="js/public-blocks.js'),'Public dynamic content renderer must be mounted');
+assert(mediaJS.includes("window.STUDIO_MEDIA={load,edit,upload,pick}"),'Image upload/picker CRUD module required');
+for(const op of ["mediaList","mediaUpload","mediaSave","mediaArchive","mediaRestore"])
+ assert(mediaJS.includes("'"+op+"'"),'Media UI missing protected request: '+op);
+for(const op of ["contentList","contentSave","contentArchive","contentRestore"])
+ assert(contentJS.includes("'"+op+"'"),'Content UI missing protected request: '+op);
+assert(adminJS.includes("window.STUDIO_CONTENT?.load()"),'Content CRUD must load when opening Pages editor');
+assert(adminJS.includes("window.STUDIO_MEDIA?.pick"),'Page and project image fields need library integration');
+assert(publicBlocksJS.includes('textContent=String(text)'),'Public dynamic content must use text-only rendering');
+assert(!publicBlocksJS.includes('innerHTML='),'Do not interpolate CMS content as HTML');
+
 console.log('PASS: standalone workspace navigation, authenticated client operations, shared schema, and legacy fallback');
