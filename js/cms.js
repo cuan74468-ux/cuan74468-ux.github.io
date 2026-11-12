@@ -25,7 +25,7 @@
 /* Backend integration. Public defaults render synchronously before any network request. */
 (() => {
  const $=s=>document.querySelector(s),E=window.STUDIO.escapeHTML;
- let gasURL='',revision='',token='',loadPromise,loginExpiry=0;
+ let gasURL='',revision='',token='',loadPromise,loginExpiry=0,siteRevision='',siteSupported=false;
  const validEndpoint=s=>/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(s);
  async function request(action,payload){
   if(!validEndpoint(gasURL))throw Error('Form online belum aktif. Silakan hubungi Ferry melalui WhatsApp.');
@@ -39,7 +39,7 @@
   }catch(err){if(err.name==='AbortError')throw Error('Respons terlalu lama. Data mungkin sudah tersimpan; coba lagi dengan pesan yang sama.');if(err instanceof SyntaxError)throw Error('Respons bukan JSON. Pastikan deployment Web app dapat diakses oleh Anyone.');throw err;}
   finally{clearTimeout(timer);}
  }
- async function sync(){const data=await request('projects');revision=data.revision;window.STUDIO.updateProjects(data.projects);return data;}
+ async function sync(){const data=await request('projects');revision=data.revision;window.STUDIO.updateProjects(data.projects);siteSupported=typeof data.siteRevision==='string'&&data.content&&typeof data.content==='object';if(siteSupported){siteRevision=data.siteRevision;window.STUDIO.site?.publish(data.content);}document.dispatchEvent(new CustomEvent('studio:cms-site-sync',{detail:{supported:siteSupported}}));return data;}
  loadPromise=(async()=>{
   try{const r=await fetch('config.json',{cache:'no-store'});if(!r.ok)throw Error('Konfigurasi tidak dapat dimuat.');const config=await r.json();if(validEndpoint(config.gasUrl)){gasURL=config.gasUrl;await sync();$('#leadStatus').textContent='Pesan dikirim ke Ferry dan disimpan secara privat.';}}
   catch{ /* Local default projects remain usable when Sheets is unavailable. */ }
@@ -68,10 +68,31 @@
  $('#downloadConfig').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({gasUrl:gasURL},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='config.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  function renderList(){const list=$('#adminProjectList');list.replaceChildren();window.STUDIO.projects.forEach(p=>{const b=document.createElement('button');b.type='button';b.textContent=p.nama+(p.featured_ring?' · Utama':'');b.onclick=()=>editProject(p);list.append(b);});}
  function editProject(p){const form=$('#projectForm');form.reset();for(const [key,value] of Object.entries(p)){const el=form.elements.namedItem(key);if(!el)continue;if(el.type==='checkbox')el.checked=value===true;else el.value=value;}form.elements.id.readOnly=!!p.id;}
- function clearSession(){token='';loginExpiry=0;$('#adminPanel').hidden=true;$('#adminLogin').hidden=false;$('#projectForm').reset();}
- $('#adminLogin').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;msg('Memeriksa login…');try{await loadPromise;const credentials=Object.fromEntries(new FormData(e.target));const r=await request('login',credentials);token=r.token;loginExpiry=Date.now()+r.expiresIn*1000;e.target.elements.password.value='';await sync();e.target.hidden=true;$('#adminPanel').hidden=false;renderList();editProject({});msg('Berhasil masuk. Pilih proyek untuk diedit atau tambahkan proyek baru.');}catch(err){clearSession();e.target.elements.password.value='';msg(err.message);}finally{button.disabled=false;}};
+ function clearSession(){token='';loginExpiry=0;$('#adminPanel').hidden=true;$('#adminLogin').hidden=false;$('#projectForm').reset();window.STUDIO.site?.reset();document.dispatchEvent(new Event('studio:cms-logout'));}
+ $('#adminLogin').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;msg('Memeriksa login…');try{await loadPromise;const credentials=Object.fromEntries(new FormData(e.target));const r=await request('login',credentials);token=r.token;loginExpiry=Date.now()+r.expiresIn*1000;e.target.elements.password.value='';await sync();e.target.hidden=true;$('#adminPanel').hidden=false;renderList();editProject({});document.dispatchEvent(new Event('studio:cms-login'));msg('Berhasil masuk. Pilih proyek untuk diedit atau tambahkan proyek baru.');}catch(err){clearSession();e.target.elements.password.value='';msg(err.message);}finally{button.disabled=false;}};
  $('#newProject').onclick=()=>{editProject({});$('#projectForm').elements.id.focus();};
  $('#refreshProjects').onclick=async()=>{try{await sync();renderList();editProject({});msg('Data terbaru dimuat. Pilih kembali proyek yang akan diedit.');}catch(err){msg(err.message);}};
  $('#logoutAdmin').onclick=async()=>{const t=token;clearSession();try{await request('logout',{token:t});msg('Sesi telah ditutup.');}catch{msg('Sesi lokal ditutup. Sesi server akan kedaluwarsa otomatis.');}};
+
+ window.STUDIO.cmsBridge={
+   isAuthenticated:()=>!!token&&Date.now()<loginExpiry,
+   siteEnabled:()=>siteSupported,
+   getSiteRevision:()=>siteRevision,
+   sync,
+   saveSite:async content=>{
+     if(!token||Date.now()>=loginExpiry)throw Error('Sesi admin berakhir. Masuk kembali.');
+     if(!siteSupported)throw Error('Backend GAS perlu diperbarui ke versi CMS terbaru, kemudian deploy ulang.');
+     const r=await request('saveSite',{token,expectedSiteRevision:siteRevision,content});
+     siteRevision=r.siteRevision;window.STUDIO.site.publish(r.content);
+     return r;
+   },
+   revertSite:async()=>{
+     if(!token||Date.now()>=loginExpiry)throw Error('Sesi admin berakhir. Masuk kembali.');
+     if(!siteSupported)throw Error('Backend CMS terbaru belum aktif.');
+     const r=await request('revertSite',{token,expectedSiteRevision:siteRevision});
+     siteRevision=r.siteRevision;window.STUDIO.site.publish(r.content);
+     return r;
+   }
+ };
  $('#projectForm').onsubmit=async e=>{e.preventDefault();if(Date.now()>=loginExpiry){clearSession();msg('Sesi berakhir. Login kembali.');return;}const button=e.target.querySelector('button');button.disabled=true;msg('Menyimpan proyek…');try{const p=Object.fromEntries(new FormData(e.target));p.featured_ring=e.target.elements.featured_ring.checked;const r=await request('saveProject',{token,expectedRevision:revision,project:p});revision=r.revision;window.STUDIO.updateProjects(r.projects);renderList();editProject(r.projects.find(x=>x.id===p.id)||p);msg('Proyek berhasil tersimpan di Google Sheets.');}catch(err){msg(err.message);}finally{button.disabled=false;}};
 })();
