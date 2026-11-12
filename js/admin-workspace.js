@@ -106,9 +106,45 @@ async function reloadPublic(){
  state.siteContent=data.content&&typeof data.content==='object'?data.content:{};
  state.siteRevision=String(data.siteRevision||'');
  if(!state.dirty)resetDraft(false);
- setStatus($('#syncLabel'),state.siteRevision?'Backend CMS terhubung':'Backend perlu versi baru');
+ setStatus($('#syncLabel'),state.siteRevision?'Konten publik terhubung · cek fitur lanjut':'CMS halaman belum tersedia');
  return data;
 }
+
+/** Save a single live visual asset using existing V2-compatible content actions.
+    This does not require the optional V4 media library or GitHub upload token. */
+async function saveUsageImage(usage,rawUrl){
+ needLogin();
+ const url=safeImage(String(rawUrl||'').trim());
+ if(!url)throw Error('Masukkan path assets/nama-file.webp atau URL gambar HTTPS yang valid.');
+ if(usage.kind==='project'){
+   const project=state.projects.find(p=>p.id===usage.id);
+   if(!project)throw Error('Proyek tidak tersedia. Muat ulang daftar proyek.');
+   if(!state.revision)throw Error('Revisi proyek tidak tersedia. Sinkronkan kembali data publik.');
+   const result=await request('saveProject',{token:state.token,expectedRevision:state.revision,project:{...project,thumbnail:url}});
+   if(!Array.isArray(result.projects)||typeof result.revision!=='string')throw Error('Respons simpan proyek tidak lengkap.');
+   state.projects=result.projects;state.revision=result.revision;
+   if(state.view==='projects')renderProjects();
+   return {message:'Thumbnail proyek berhasil diperbarui. Periksa website publik setelah memuat ulang.'};
+ }
+ if(usage.kind==='site'){
+   if(!['character.image','hero.waveImage','seo.ogImage'].includes(usage.key))throw Error('Aset ini belum memiliki editor gambar langsung.');
+   if(state.dirty)throw Error('Ada perubahan Editor Halaman yang belum diterbitkan. Simpan atau batalkan perubahan itu terlebih dahulu.');
+   if(!state.siteRevision)throw Error('Editor gambar membutuhkan dukungan CMS halaman pada GAS. Deployment backend mungkin masih terlalu lama.');
+   const values={...state.siteContent,[usage.key]:url};
+   if(usage.key==='character.image')values['character.mode']='static';
+   const result=await request('saveSite',{token:state.token,expectedSiteRevision:state.siteRevision,content:values});
+   if(typeof result.siteRevision!=='string'||!result.content)throw Error('Respons simpan halaman tidak lengkap.');
+   state.siteContent=result.content;state.siteRevision=result.siteRevision;
+   const preview=$('#pagePreview')?.contentWindow?.STUDIO?.site;
+   preview?.publish(state.siteContent);
+   resetDraft(state.view==='pages');
+   return {message:usage.key==='character.image'
+      ?'Karakter diganti dalam mode gambar statis. Gerakan mata dan tangan memerlukan kalibrasi aset tersendiri.'
+      :'Gambar halaman berhasil diterbitkan. Muat ulang website publik untuk memeriksanya.'};
+ }
+ throw Error('Jenis aset tidak dikenal.');
+}
+
 async function logout(){
  const token=state.token;loggedOut('Anda telah keluar dari workspace.');
  if(token)try{await request('logout',{token});}catch{}
@@ -443,7 +479,7 @@ function bindEvents(){
  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
  window.addEventListener('beforeunload',e=>{if(state.dirty){e.preventDefault();e.returnValue='';}});
 }
-window.STUDIO_ADMIN={state,request,toast,el,btn,openDrawer,closeDrawer,drawPager,makeFormField,safeImage,friendlyDate};
+window.STUDIO_ADMIN={state,request,toast,el,btn,openDrawer,closeDrawer,drawPager,makeFormField,safeImage,friendlyDate,saveUsageImage};
 bindEvents();
 configure().then(()=>{setStatus($('#loginMessage'),'');}).catch(error=>setStatus($('#loginMessage'),error.message));
 })();
