@@ -154,6 +154,33 @@ const savedFile=post({action:'mediaList',token:session.token,search:'Changed'}).
 assert.equal(savedFile.url,upload.item.url,'Uploaded URLs are immutable via metadata edit');
 assert.equal(post({action:'mediaArchive',token:session.token,id:upload.item.id,expectedUpdatedAt:savedFile.updated_at}).ok,true);
 
+
+// CONTENT V4: dynamic public blocks are created as drafts, only published
+// records appear on public GET, and archive/restore preserves history.
+assert.equal(sheets.get('content_blocks').rows[0].length,10);
+assert.equal(post({action:'contentList'}).ok,false);
+assert.equal(post({action:'contentSave',title:'Unauthorized',body:'Bad'}).ok,false);
+let draft=post({action:'contentSave',token:session.token,title:'Cerita proyek',body:'Proses dan karya yang dapat dilihat publik setelah terbit.',image_url:'',button_text:'',button_url:'',sort_order:'20',status:'draft'});
+assert.equal(draft.ok,true,draft.error||'Draft should be valid');
+assert.equal(draft.item.status,'draft');
+assert.equal(ctx.doGet({parameter:{action:'projects'}}).blocks.length,0,'Drafts must not render publicly');
+assert.equal(post({action:'contentSave',token:session.token,id:draft.item.id,expectedUpdatedAt:'wrong',title:draft.item.title,body:draft.item.body,sort_order:'20'}).ok,false,'Stale write must fail');
+assert.equal(post({action:'contentSave',token:session.token,id:draft.item.id,expectedUpdatedAt:draft.item.updated_at,title:'Bad URL',body:draft.item.body,sort_order:'20',button_text:'Read',button_url:'javascript:bad()'}).ok,false);
+let published=post({action:'contentSave',token:session.token,id:draft.item.id,expectedUpdatedAt:draft.item.updated_at,title:'=Title is escaped',body:draft.item.body,image_url:changed.item.url,button_text:'Hubungi saya',button_url:'#contact',sort_order:'20',status:'active'});
+assert.equal(published.ok,true,published.error||'Publish should pass');
+assert.equal(ctx.doGet({parameter:{action:'projects'}}).blocks.length,1);
+assert(sheets.get('content_blocks').rows[1][1].startsWith("'="),'Content title must be escaped against formulas');
+assert.equal(post({action:'mediaArchive',token:session.token,id:changed.item.id,expectedUpdatedAt:changed.item.updated_at}).ok,false,'Media in published content block must not be archived');
+let contentList=post({action:'contentList',token:session.token,status:'active',search:'title'});
+assert.equal(contentList.ok,true);assert.equal(contentList.total,1);
+assert.equal(post({action:'contentArchive',token:session.token,id:published.item.id,expectedUpdatedAt:published.item.updated_at}).ok,true);
+assert.equal(ctx.doGet({parameter:{action:'projects'}}).blocks.length,0,'Archived content must disappear publicly');
+const archivedBlock=post({action:'contentList',token:session.token,status:'archived'}).items[0];
+assert.equal(post({action:'contentRestore',token:session.token,id:archivedBlock.id,expectedUpdatedAt:archivedBlock.updated_at}).ok,true);
+const restoredBlock=post({action:'contentList',token:session.token,status:'draft'}).items[0];
+assert.equal(restoredBlock.id,draft.item.id,'Restore must return a draft, not auto-publish');
+assert.equal(ctx.doGet({parameter:{action:'projects'}}).blocks.length,0);
+
 assert.equal(post({action:'logout',token:session.token}).ok,true);assert.equal(post({action:'saveProject',token:session.token,expectedRevision:result.revision,project:p}).ok,false);
 for(let i=0;i<10;i++)post({action:'login',email:'peyaje531@gmail.com',password:'wrong'});assert.match(post({action:'login',email:'peyaje531@gmail.com',password:pass}).error,/Terlalu banyak/);
 assert.equal(ctx.doPost({postData:{contents:'not json'}}).ok,false);
