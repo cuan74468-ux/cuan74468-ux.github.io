@@ -5,32 +5,34 @@ Portofolio statis: HTML, CSS, JavaScript biasa. Tidak membutuhkan npm, build, Ve
 ## CMS Workspace V4 — Content & Media CRUD (12 November 2026)
 
 **Fitur baru pada source:**
-- **Pustaka Media:** tambah gambar lewat URL HTTPS atau path \`assets/\`, ubah judul/alt/link (untuk URL eksternal), cari, filter, pagination 12 item/halaman, arsipkan dan pulihkan. File dan media yang sedang digunakan proyek aktif, arsip proyek, konten terbit, atau blok konten tidak boleh diarsipkan sampai referensi diganti.
-- **Upload langsung dari browser:** gambar JPG/PNG/WebP/GIF hingga 900 KB setelah optimasi opsional pada browser, dikirim melalui POST terautentikasi ke GAS. GAS mengunggah file ke GitHub \`main/assets/uploads/\` menggunakan REST API GitHub **dengan token yang disimpan hanya di GAS Script Properties**. Upload GitHub akan memicu deployment Pages; URL baru tidak selalu dapat diakses seketika.
-- **Asset picker:** pilih gambar untuk thumbnail proyek serta field gambar website tanpa perlu mengetik URL manual. Foto pengganti karakter secara otomatis menggunakan mode \`static\` agar koordinat animasi lama tidak digunakan.
+- **Pustaka Media:** tambah gambar lewat URL HTTPS atau path `assets/`, ubah judul/alt/link (untuk URL eksternal), cari, filter, pagination 12 item/halaman, arsipkan dan pulihkan. File dan media yang sedang digunakan proyek aktif, arsip proyek, konten terbit, atau blok konten tidak boleh diarsipkan sampai referensi diganti.
+- **Upload langsung dari browser:** gambar JPG/PNG/WebP/GIF hingga 900 KB setelah optimasi opsional pada browser, dikirim melalui POST terautentikasi ke GAS. GAS mengunggah file ke GitHub `main/assets/uploads/` menggunakan REST API GitHub **dengan token yang disimpan hanya di GAS Script Properties**. Upload GitHub akan memicu deployment Pages; URL baru tidak selalu dapat diakses seketika.
+- **Asset picker:** pilih gambar untuk thumbnail proyek serta field gambar website tanpa perlu mengetik URL manual. Foto pengganti karakter secara otomatis menggunakan mode `static` agar koordinat animasi lama tidak digunakan.
 - **Editor halaman:** setiap field teks memiliki kontrol Kosongkan/Default jika relevan; gambar mendapat kontrol Pilih Media / Default; menyimpan tetap memakai revisi dan snapshot.
-- **Konten Tambahan:** tambah blok editorial baru (judul, isi, gambar, CTA, urutan), Draft / Terbitkan, edit, cari, pagination, arsip dan pulihkan. Konten berstatus \`draft\` atau \`archived\` tidak terlihat publik. Tidak mengubah atau menghapus seksi lama.
+- **Konten Tambahan:** tambah blok editorial baru (judul, isi, gambar, CTA, urutan), Draft / Terbitkan, edit, cari, pagination, arsip dan pulihkan. Konten berstatus `draft` atau `archived` tidak terlihat publik. Tidak mengubah atau menghapus seksi lama.
 
-**Schema Google Sheets tambahan:** \`media_library\` (10 kolom) dan \`content_blocks\` (10 kolom). Keduanya ditambahkan tanpa menghapus atau mereset tabel lain. \`setupDatabase()\` idempotent dan memverifikasi header.
+**Schema Google Sheets tambahan:** `media_library` (10 kolom) dan `content_blocks` (10 kolom). Keduanya ditambahkan tanpa menghapus atau mereset tabel lain. `setupDatabase()` idempotent dan memverifikasi header.
 
 ### Aktivasi dan integrasi (wajib untuk source backend yang baru)
 
-1. Buka spreadsheet pemilik \`Linggau_AI_Studio_Portfolio_DB\` → **Ekstensi → Apps Script**. Periksa bahwa ini proyek GAS yang benar dan Web App-nya sesuai URL \`config.json\`.
+1. Buka spreadsheet pemilik `Linggau_AI_Studio_Portfolio_DB` → **Ekstensi → Apps Script**. Periksa bahwa ini proyek GAS yang benar dan Web App-nya sesuai URL `config.json`.
 2. Ganti **isi Code.gs** di editor GAS dengan versi terbaru di repository. **Jangan menghapus file AdminRecovery.gs** atau Script Properties yang sudah ada.
-3. Save. Jalankan \`setupDatabase()\` sekali. Dua tab tambahan \`media_library\` dan \`content_blocks\` otomatis diperiksa atau disiapkan. Tidak perlu reset akun admin.
-4. **Deploy → Manage deployments → Edit → New version → Deploy** pada deployment GAS yang sudah ada agar URL tidak berubah.
-5. Login admin di \`/studio-admin.html\`. Uji **Tambah URL** terlebih dahulu (tidak memerlukan GitHub token). Uji pula buat konten Draft, Terbitkan, dan Arsip dengan konten dummy.
-6. **Opsional untuk mengaktifkan Unggah Gambar:** di akun GitHub pemilik repository, buat *fine-grained personal access token* khusus repository \`cuan74468-ux/cuan74468-ux.github.io\`, permission repository **Contents: Read and write** (minimal; Metadata Read otomatis). Jangan beri akses ke repository lain. Simpan token pada **Apps Script → Project Settings → Script Properties → MEDIA_GITHUB_TOKEN**. **Jangan memasukkan token ke Google Sheets, source GitHub, config.json, atau chat.** Setelah menyimpan property, backend yang sudah dideploy dapat membaca token tanpa perubahan source.
-7. Refresh admin. Menu Pustaka Media seharusnya memperlihatkan status upload aktif. Unggah gambar dummy kecil, tunggu GitHub Pages deploy dan verifikasi gambar URL bisa diakses tanpa login.
-8. Sebelum memublikasikan perubahan nyata, uji penggantian gambar proyek, field hero, dan blok konten; hapus/arsip media yang tidak digunakan; periksa apakah gambar yang dipakai ditolak untuk diarsipkan; periksa log eksekusi GAS.
+3. Save. Jalankan `setupDatabase()` sekali. Dua tab tambahan `media_library` dan `content_blocks` otomatis diperiksa atau disiapkan. Tidak perlu reset akun admin.
+4. **PENTING — aktifkan izin eksternal:** Pada Apps Script → Project Settings, centang **Show "appsscript.json" manifest file in editor**. Buka `appsscript.json`, salin versi terbaru dari repository; scope harus mencakup `https://www.googleapis.com/auth/spreadsheets` dan `https://www.googleapis.com/auth/script.external_request`. Simpan. Jika ada prompt OAuth berikutnya, berikan izin hanya untuk skrip milik Anda.
+5. **Deploy → Manage deployments → Edit → New version → Deploy** pada deployment GAS yang sudah ada agar URL tidak berubah.
+6. Login admin di `/studio-admin.html`. Uji **Tambah URL** terlebih dahulu (tidak memerlukan GitHub token). Uji pula buat konten Draft, Terbitkan, dan Arsip dengan konten dummy.
+7. **Opsional untuk mengaktifkan Unggah Gambar:** di akun GitHub pemilik repository, buat *fine-grained personal access token* khusus repository `cuan74468-ux/cuan74468-ux.github.io`, permission repository **Contents: Read and write** (minimal; Metadata Read otomatis). Jangan beri akses ke repository lain. Simpan token pada **Apps Script → Project Settings → Script Properties → MEDIA_GITHUB_TOKEN**. **Jangan memasukkan token ke Google Sheets, source GitHub, config.json, atau chat.** Setelah menyimpan property, backend yang sudah dideploy dapat membaca token tanpa perubahan source.
+8. Pada editor Apps Script, pilih fungsi `testMediaGitHubConnection()` dan jalankan untuk mengotorisasi akses HTTPS serta memeriksa token GitHub (tes baca saja). Jika log menunjukkan berhasil, lanjutkan uji upload. Tes ini tidak memastikan izin menulis; unggah dummy akan memastikannya.
+9. Refresh admin. Menu Pustaka Media seharusnya memperlihatkan status upload aktif. Unggah gambar dummy kecil, tunggu GitHub Pages deploy dan verifikasi gambar URL bisa diakses tanpa login.
+10. Sebelum memublikasikan perubahan nyata, uji penggantian gambar proyek, field hero, dan blok konten; hapus/arsip media yang tidak digunakan; periksa apakah gambar yang dipakai ditolak untuk diarsipkan; periksa log eksekusi GAS.
 
 **Catatan penting tentang keamanan dan pembatasan:**
 - Upload server memeriksa token sesi, MIME dan *magic bytes*, batas ukuran, path acak, dan menyimpan credential GitHub hanya di Script Properties.
 - Penghapusan media atau konten menggunakan **soft delete (arsip)** agar bisa dipulihkan. File fisik GitHub tidak dihapus. Untuk mengganti gambar yang sudah diunggah, upload gambar baru dan ubah referensi konten/proyek.
-- Pustaka mendukung URL eksternal yang benar-benar mengarah ke gambar. **Link berbagi Google Drive tidak dijamin bisa ditampilkan sebagai \`<img>\`**, jadi hosting gambar paling stabil adalah GitHub Pages atau penyedia gambar HTTPS yang memang mendukung hotlink.
+- Pustaka mendukung URL eksternal yang benar-benar mengarah ke gambar. **Link berbagi Google Drive tidak dijamin bisa ditampilkan sebagai `<img>`**, jadi hosting gambar paling stabil adalah GitHub Pages atau penyedia gambar HTTPS yang memang mendukung hotlink.
 - **Source sudah diuji di GitHub Actions melalui mock**, tetapi integrasi token GitHub di GAS aktif dan pengujian upload browser nyata **belum diverifikasi** dari alat ini. Jangan menyimpulkan integrasi produksi sudah tuntas hanya karena CI lulus.
 - GitHub Pages gratis untuk repository publik dengan penggunaan wajar, namun upload otomatis menciptakan commit/deployment; hindari upload berulang tanpa kebutuhan.
-- \`MEDIA_GITHUB_TOKEN\` adalah kredensial sensitif. Rotasi jika bocor dan pastikan expiry sesuai kebutuhan. Simpan hanya pada Script Properties GAS.
+- `MEDIA_GITHUB_TOKEN` adalah kredensial sensitif. Rotasi jika bocor dan pastikan expiry sesuai kebutuhan. Simpan hanya pada Script Properties GAS.
 
 ---
 
