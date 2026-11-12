@@ -404,11 +404,11 @@ async function restoreHistory(p){
 async function checkConnection(show=true){
  try{
   if(!state.gas)await configure();
-  const response=await request('projects');
-  const ready=typeof response.siteRevision==='string';
-  const notice=ready?'GAS terhubung; respons CMS publik tersedia.':'GAS merespons, tetapi belum menggunakan schema CMS. Perbarui Code.gs ke versi terbaru dan deploy ulang.';
-  setStatus($('#settingsBackend'),state.gas+'\n'+notice);
-  setStatus($('#syncLabel'),ready?'Backend terhubung':'GAS perlu pembaruan');
+  const response=await request('health');
+  const ready=Number(response.version)>=4&&Array.isArray(response.features)&&response.features.includes('contentBlocks')&&response.features.includes('mediaLibrary');
+  const notice=ready?'Backend CMS V4 terdeteksi. Media Library dan Content CRUD tersedia.':'Backend aktif, tetapi masih versi lama. Tempel Code.gs V4 dan Deploy → New version.';
+  setStatus($('#settingsBackend'),state.gas+'\n'+notice+'\nStatus konfigurasi: '+(response.ready?'siap':'perlu pemeriksaan'));
+  setStatus($('#syncLabel'),ready?'Backend V4 aktif':'Backend perlu pembaruan');
   if(show)toast(notice,!ready);
  }catch(error){setStatus($('#settingsBackend'),error.message);if(show)toast(error.message,true);}
 }
