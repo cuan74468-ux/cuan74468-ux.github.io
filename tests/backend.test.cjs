@@ -27,11 +27,12 @@ const session=post({action:'login',email:'peyaje531@gmail.com',password:pass});a
 const beforeSite=ctx.doGet({parameter:{action:'projects'}});
 assert.equal(typeof beforeSite.siteRevision,'string');
 assert.equal(Object.keys(beforeSite.content).length,0);
-const siteSample={'hero.headline2':'Kini konten dapat diedit','contact.email':'editor@example.org','contact.whatsapp':'6289509016792','character.mode':'static','character.scale':'105','theme.paper':'#FAFAFC','about.bio1':'=FORMULA("attack")'};
+const siteSample={'hero.headline2':'Kini konten dapat diedit','nav.quickWaLabel':'WhatsApp cepat ↗','contact.email':'editor@example.org','contact.whatsapp':'6289509016792','character.mode':'static','character.scale':'105','theme.paper':'#FAFAFC','about.bio1':'=FORMULA("attack")'};
 assert.equal(post({action:'saveSite',content:siteSample,expectedSiteRevision:beforeSite.siteRevision}).ok,false,'Site writes require authentication');
 let siteSaved=post({action:'saveSite',token:session.token,expectedSiteRevision:beforeSite.siteRevision,content:siteSample});
 assert.equal(siteSaved.ok,true);
 assert.equal(siteSaved.content['hero.headline2'],'Kini konten dapat diedit');
+assert.equal(siteSaved.content['nav.quickWaLabel'],'WhatsApp cepat ↗','CamelCase CMS field must round-trip');
 assert.equal(siteSaved.content['contact.email'],'editor@example.org');
 assert.equal(sheets.get('site_content').rows.length,Object.keys(siteSample).length+1);
 assert(!JSON.stringify(siteSaved).includes('hmac-sha256'));
