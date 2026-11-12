@@ -32,7 +32,7 @@ function setupDatabase(){
  try{
   const db=database_(),props=PropertiesService.getScriptProperties();
   if(!props.getProperty('ADMIN_PEPPER'))props.setProperty('ADMIN_PEPPER',Utilities.getUuid()+Utilities.getUuid());
-  [['projects',PROJECT_HEADERS],['leads',LEAD_HEADERS],['admin',ADMIN_HEADERS],['site_content',['key','value','updated_at']],['site_history',['id','tanggal','admin','snapshot_json']],['lead_meta',['lead_id','status','catatan','updated_at']],['project_archive',PROJECT_HEADERS.concat(['archived_at','archived_by'])]].forEach(([name,headers])=>{
+  [['projects',PROJECT_HEADERS],['leads',LEAD_HEADERS],['admin',ADMIN_HEADERS],['site_content',['key','value','updated_at']],['site_history',['id','tanggal','admin','snapshot_json']],['lead_meta',['lead_id','status','catatan','updated_at']],['project_archive',PROJECT_HEADERS.concat(['archived_at','archived_by'])],['media_library',['id','title','kind','url','alt_text','github_path','github_sha','created_at','updated_at','status']]].forEach(([name,headers])=>{
    let sh=db.getSheetByName(name);if(!sh)sh=db.insertSheet(name);
    if(sh.getLastRow()===0)sh.getRange(1,1,1,headers.length).setValues([headers]);
    if(JSON.stringify(sh.getRange(1,1,1,headers.length).getValues()[0])!==JSON.stringify(headers))throw Error('Header '+name+' berbeda; tidak diubah.');
@@ -58,7 +58,7 @@ function setupDatabase(){
   SpreadsheetApp.flush();return {ok:true,projects:projects_().length,spreadsheet:db.getUrl()};
  }finally{lock.releaseLock();}
 }
-function health_(){let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5&&!!database_().getSheetByName('site_content');}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:2,ready:ready});}
+function health_(){let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5&&!!database_().getSheetByName('site_content');}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:4,features:['mediaLibrary','mediaExternalUrl','mediaUploadGitHub','mediaArchive','mediaRestore'],ready:ready});}
 function doGet(e){try{const action=(e&&e.parameter&&e.parameter.action)||'projects';if(action==='projects')return json_(publicData_());if(action==='health')return health_();return json_({ok:false,error:'Aksi tidak tersedia.'});}catch(err){return json_({ok:false,error:'Database belum siap. Jalankan setupDatabase.'});}}
 function session_(token){if(typeof token!=='string'||token.length>200)throw Error('Sesi berakhir. Login kembali.');const s=CacheService.getScriptCache().get('session:'+digest_(token));if(!s)throw Error('Sesi berakhir. Login kembali.');return JSON.parse(s);}
 function login_(b){
@@ -163,9 +163,9 @@ function revertSite_(b){
 function doPost(e){
  let lock;
  try{
-  if(!e||!e.postData||e.postData.contents.length>100000)throw Error('Permintaan tidak valid.');const b=JSON.parse(e.postData.contents);
+  if(!e||!e.postData||e.postData.contents.length>1450000)throw Error('Permintaan terlalu besar.');const b=JSON.parse(e.postData.contents);if(b.action!=='mediaUpload'&&e.postData.contents.length>100000)throw Error('Permintaan tidak valid.');
   lock=LockService.getScriptLock();lock.waitLock(15000);let result;
-  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'workspaceOverview':result=workspaceOverview_(b);break;case 'workspaceLeads':result=workspaceLeads_(b);break;case 'workspaceSaveLead':result=workspaceSaveLead_(b);break;case 'workspaceArchiveProject':result=workspaceArchiveProject_(b);break;case 'workspaceArchivedProjects':result=workspaceArchivedProjects_(b);break;case 'workspaceRestoreProject':result=workspaceRestoreProject_(b);break;case 'workspaceHistory':result=workspaceHistory_(b);break;case 'workspaceRestoreHistory':result=workspaceRestoreHistory_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
+  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'workspaceOverview':result=workspaceOverview_(b);break;case 'workspaceLeads':result=workspaceLeads_(b);break;case 'workspaceSaveLead':result=workspaceSaveLead_(b);break;case 'workspaceArchiveProject':result=workspaceArchiveProject_(b);break;case 'workspaceArchivedProjects':result=workspaceArchivedProjects_(b);break;case 'workspaceRestoreProject':result=workspaceRestoreProject_(b);break;case 'workspaceHistory':result=workspaceHistory_(b);break;case 'workspaceRestoreHistory':result=workspaceRestoreHistory_(b);break;case 'mediaList':result=mediaList_(b);break;case 'mediaSave':result=mediaSave_(b);break;case 'mediaArchive':result=mediaArchive_(b);break;case 'mediaRestore':result=mediaRestore_(b);break;case 'mediaUpload':result=mediaUpload_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
   return json_(result);
  }catch(err){return json_({ok:false,error:String(err.message||'Permintaan gagal.').slice(0,200)});}finally{if(lock)lock.releaseLock();}
 }
@@ -269,6 +269,119 @@ function workspaceRestoreHistory_(b){
  if(!hit)throw Error('Riwayat versi tidak ditemukan.');
  const restored=checkSiteContent_(JSON.parse(String(hit[3])));
  return writeSite_(restored,account.email);
+}
+
+
+/* CMS MEDIA LIBRARY V4.
+   GitHub is the canonical public image host. Store the fine-grained GitHub PAT
+   only in GAS Script Properties under MEDIA_GITHUB_TOKEN.
+   Repository contents permissions: Read and write, this repository only. */
+const MEDIA_HEADERS=['id','title','kind','url','alt_text','github_path','github_sha','created_at','updated_at','status'];
+const MEDIA_REPO='cuan74468-ux/cuan74468-ux.github.io';
+const MEDIA_UPLOAD_LIMIT=900000; // decoded bytes: small thumbnails/portraits only
+function mediaRows_(){return rows_('media_library',MEDIA_HEADERS);}
+function mediaPublic_(row){return Object.fromEntries(MEDIA_HEADERS.filter(k=>k!=='github_sha').map(k=>[k,String(row[MEDIA_HEADERS.indexOf(k)]||'')]));}
+function mediaLive_(row){return row&&String(row[9])==='active';}
+function mediaList_(b){
+ session_(b.token);
+ const page=Math.max(1,Math.min(10000,parseInt(b.page,10)||1));
+ const limit=Math.max(6,Math.min(30,parseInt(b.limit,10)||12));
+ const search=String(b.search||'').trim().toLowerCase().slice(0,120);
+ const status=['active','archived','all'].includes(b.status)?b.status:'active';
+ const rows=mediaRows_().filter(r=>r[0]).reverse().filter(r=>(status==='all'||r[9]===status)&&(!search||[r[1],r[3],r[4]].some(v=>String(v||'').toLowerCase().includes(search))));
+ const total=rows.length,pages=Math.max(1,Math.ceil(total/limit)),current=Math.min(page,pages);
+ return {ok:true,items:rows.slice((current-1)*limit,current*limit).map(mediaPublic_),total,pages,page:current,limit,
+  uploadConfigured:!!PropertiesService.getScriptProperties().getProperty('MEDIA_GITHUB_TOKEN')};
+}
+function mediaSave_(b){
+ session_(b.token);
+ const title=text_(b.title,2,120,'Judul media');
+ const alt=text_(typeof b.alt_text==='string'?b.alt_text:'',0,250,'Teks alternatif');
+ const sh=sheet_('media_library',MEDIA_HEADERS),rows=mediaRows_();
+ const now=new Date().toISOString();
+ if(!b.id){
+  const url=validUrl_(text_(b.url,8,1500,'URL media'),true);
+  if(!/^https:\/\//.test(url)&&!/^(?:\.\/)?assets\//.test(url))throw Error('Gunakan URL HTTPS atau aset lokal.');
+  const id=Utilities.getUuid();
+  sh.appendRow([id,literal_(title),'external',literal_(url),literal_(alt),'','',now,now,'active']);
+  SpreadsheetApp.flush();return {ok:true,item:mediaPublic_(rows_('media_library',MEDIA_HEADERS).slice(-1)[0])};
+ }
+ const id=text_(b.id,8,100,'ID media'),idx=rows.findIndex(r=>String(r[0])===id);
+ if(idx<0)throw Error('Media tidak ditemukan.');
+ const row=rows[idx];if(row[9]!=='active')throw Error('Pulihkan media sebelum mengedit.');
+ if(b.expectedUpdatedAt!==String(row[8]))throw Error('Media sudah berubah. Muat ulang daftar.');
+ let url=String(row[3]);
+ if(row[2]==='external')url=validUrl_(text_(b.url,8,1500,'URL media'),true);
+ const updated=[row[0],literal_(title),row[2],literal_(url),literal_(alt),row[5],row[6],row[7],now,'active'];
+ sh.getRange(idx+2,1,1,MEDIA_HEADERS.length).setValues([updated]);
+ SpreadsheetApp.flush();return {ok:true,item:mediaPublic_(updated)};
+}
+function mediaUsedBy_(url){
+ const usage=[];
+ const current=projects_(),archived=rows_('project_archive',ARCHIVE_HEADERS);
+ if(current.some(p=>p.thumbnail===url))usage.push('proyek aktif');
+ if(archived.some(r=>String(r[5])===url))usage.push('arsip proyek');
+ const state=siteState_();
+ if(Object.values(state.content).includes(url))usage.push('konten website');
+ return usage;
+}
+function mediaArchive_(b){
+ session_(b.token);
+ const id=text_(b.id,8,100,'ID media'),sh=sheet_('media_library',MEDIA_HEADERS);
+ const rows=mediaRows_(),idx=rows.findIndex(r=>String(r[0])===id);
+ if(idx<0)throw Error('Media tidak ditemukan.');
+ const row=rows[idx];if(row[9]!=='active')throw Error('Media sudah diarsipkan.');
+ if(b.expectedUpdatedAt!==String(row[8]))throw Error('Daftar media berubah. Muat ulang.');
+ const usage=mediaUsedBy_(String(row[3]));
+ if(usage.length)throw Error('Media masih dipakai di '+usage.join(', ')+'. Ganti referensinya lalu arsipkan.');
+ sh.getRange(idx+2,9,1,2).setValues([[new Date().toISOString(),'archived']]);
+ SpreadsheetApp.flush();return {ok:true,id,archived:true};
+}
+function mediaRestore_(b){
+ session_(b.token);
+ const id=text_(b.id,8,100,'ID media'),sh=sheet_('media_library',MEDIA_HEADERS);
+ const rows=mediaRows_(),idx=rows.findIndex(r=>String(r[0])===id);
+ if(idx<0||rows[idx][9]!=='archived')throw Error('Media arsip tidak ditemukan.');
+ if(b.expectedUpdatedAt!==String(rows[idx][8]))throw Error('Daftar media berubah. Muat ulang.');
+ sh.getRange(idx+2,9,1,2).setValues([[new Date().toISOString(),'active']]);
+ SpreadsheetApp.flush();return {ok:true,id,restored:true};
+}
+function mediaGitHub_ (method,path,body,token){
+ const api='https://api.github.com/repos/'+MEDIA_REPO+'/contents/'+path;
+ const options={method,contentType:'application/json',muteHttpExceptions:true,headers:{
+  'Accept':'application/vnd.github+json','Authorization':'Bearer '+token,
+  'X-GitHub-Api-Version':'2022-11-28','User-Agent':'linggau-ai-studio-gas'
+ }};
+ if(body)options.payload=JSON.stringify(body);
+ const response=UrlFetchApp.fetch(api,options),status=response.getResponseCode();
+ let data={};try{data=JSON.parse(response.getContentText());}catch(_){}
+ if(status<200||status>=300)throw Error(status===401||status===403?'GitHub menolak akses. Periksa MEDIA_GITHUB_TOKEN dan izin Contents: Read and write.':'Upload GitHub gagal (HTTP '+status+').');
+ return data;
+}
+function mediaUpload_(b){
+ session_(b.token);
+ const token=PropertiesService.getScriptProperties().getProperty('MEDIA_GITHUB_TOKEN');
+ if(!token)throw Error('Upload belum diaktifkan. Isi Script Property MEDIA_GITHUB_TOKEN dengan fine-grained token GitHub.');
+ const title=text_(b.title,2,120,'Judul media'),alt=text_(String(b.alt_text||''),0,250,'Teks alternatif');
+ const mime=String(b.mime||''),extensions={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
+ const ext=extensions[mime];if(!ext)throw Error('Hanya JPG, PNG, WebP, atau GIF yang diizinkan. SVG tidak diterima lewat upload.');
+ const base64=String(b.base64||'');
+ if(!base64||base64.length>Math.ceil(MEDIA_UPLOAD_LIMIT/3)*4+8||!/^[A-Za-z0-9+/]+={0,2}$/.test(base64))throw Error('Ukuran/format unggahan tidak valid (maksimal 900 KB).');
+ const bytes=Utilities.base64Decode(base64);
+ if(bytes.length<32||bytes.length>MEDIA_UPLOAD_LIMIT)throw Error('Gambar maksimal 900 KB.');
+ const first=bytes.slice(0,16).map(x=>x&255);
+ const correct=(mime==='image/png'&&first.slice(0,8).join(',')==='137,80,78,71,13,10,26,10')||
+  (mime==='image/jpeg'&&first[0]===255&&first[1]===216&&first[2]===255)||
+  (mime==='image/gif'&&String.fromCharCode(...first.slice(0,3))==='GIF')||
+  (mime==='image/webp'&&String.fromCharCode(...first.slice(0,4))==='RIFF'&&String.fromCharCode(...first.slice(8,12))==='WEBP');
+ if(!correct)throw Error('Isi berkas tidak cocok dengan format gambar.');
+ const path='assets/uploads/'+Utilities.getUuid().replace(/-/g,'')+'.'+ext;
+ const data=mediaGitHub_('put',path,{message:'media: upload via protected CMS',content:base64,branch:'main'},token);
+ if(!data.content||!data.content.sha)throw Error('GitHub tidak mengembalikan checksum file unggahan.');
+ const now=new Date().toISOString(),id=Utilities.getUuid(),url=path;
+ const row=[id,literal_(title),'upload',url,literal_(alt),path,String(data.content.sha),now,now,'active'];
+ sheet_('media_library',MEDIA_HEADERS).appendRow(row);SpreadsheetApp.flush();
+ return {ok:true,item:mediaPublic_(row),publication:'GitHub menerima file. Tunggu deployment Pages sebelum gambar tampil di website.'};
 }
 
 /** Run in the editor after deployment. Copy the printed JSON into the repository's config.json. */
