@@ -1,0 +1,30 @@
+{
+  "wave.png": {
+    "size": [
+      91,
+      96
+    ],
+    "sha256": "799a178fabfb68b32ea3ad6113f60928e9f99dfa40c516f757eb906d0aa36690"
+  },
+  "grain.png": {
+    "size": [
+      180,
+      180
+    ],
+    "sha256": "0cca51347beb81a4277707181556d19a77ba93c0b35c54c2b54faeb9dc5534d0"
+  },
+  "plate.png": {
+    "size": [
+      76,
+      62
+    ],
+    "sha256": "03e42a5ad59c20539f89267538e7e7733b376d496ffa1e19535fe2b6af26effe"
+  },
+  "char.webp": {
+    "size": [
+      651,
+      1075
+    ],
+    "sha256": "951f79986db46c14e60f03c70fa58f5163e2214479be3c374095dd335a096344"
+  }
+}

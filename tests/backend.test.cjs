@@ -1,0 +1,34 @@
+const fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+class Sheet {
+ constructor(){this.rows=[];}
+ getLastRow(){return this.rows.length;}
+ getRange(r,c,n=1,m=1){const self=this;return {getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>self.rows[r+i-1]?.[c+j-1]??'')),setValues:rows=>{rows.forEach((row,i)=>{self.rows[r+i-1]??=[];row.forEach((v,j)=>self.rows[r+i-1][c+j-1]=v);});return this;},setValue:v=>{self.rows[r-1]??=[];self.rows[r-1][c-1]=v;},setBackground:()=>({setFontWeight:()=>{}}),createTextFinder:id=>({matchEntireCell:()=>({findNext:()=>self.rows.slice(r-1,r+n-1).some(row=>row[c-1]===id)})})};}
+ appendRow(row){this.rows.push(row);}setFrozenRows(){}
+}
+const sheets=new Map(),props=new Map(),cache=new Map();
+const propertyApi={getProperty:k=>props.get(k)||null,setProperty:(k,v)=>props.set(k,v),deleteProperty:k=>props.delete(k)};
+const database={getSheetByName:n=>sheets.get(n),insertSheet:n=>{const s=new Sheet();sheets.set(n,s);return s;},getUrl:()=> 'https://docs.google.com/spreadsheets/d/mock'};
+const ctx={console,Date,JSON,Map,Set,Utilities:{getUuid:()=>crypto.randomUUID(),Charset:{UTF_8:'utf8'},DigestAlgorithm:{SHA_256:'sha256'},computeDigest:(a,v)=>[...crypto.createHash(a).update(v).digest()],computeHmacSha256Signature:(v,k)=>[...crypto.createHmac('sha256',k).update(v).digest()],formatDate:()=>new Date().toISOString().slice(0,10)},PropertiesService:{getScriptProperties:()=>propertyApi},SpreadsheetApp:{openById:()=>database,flush:()=>{}},CacheService:{getScriptCache:()=>({put:(k,v)=>cache.set(k,v),get:k=>cache.get(k),remove:k=>cache.delete(k)})},LockService:{getScriptLock:()=>({waitLock:()=>{},releaseLock:()=>{}})},ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({setMimeType:()=>JSON.parse(text)})},ScriptApp:{getService:()=>({getUrl:()=>null})}};
+vm.createContext(ctx);vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../Code.gs'),'utf8'),ctx);
+const pass='Only-For-Unit-Test-456!';props.set('ADMIN_INITIAL_PASSWORD',pass);
+assert.equal(ctx.setupDatabase().ok,true);assert.equal(sheets.get('projects').rows.length,6);
+sheets.get('leads').appendRow(['preserved','Old lead','','','','']);ctx.setupDatabase();assert.equal(sheets.get('leads').rows.length,2);assert.equal(sheets.get('projects').rows.length,6);assert.match(sheets.get('admin').rows[1][1],/^hmac-sha256\$/);assert(!JSON.stringify([...sheets.values()]).includes(pass));
+const post=b=>ctx.doPost({postData:{contents:JSON.stringify(b)}});
+let result=ctx.doGet({parameter:{action:'projects'}});assert.equal(result.projects.length,5);assert(!JSON.stringify(result).includes('password'));assert.equal(ctx.doGet({parameter:{action:'admin'}}).ok,false);
+assert.equal(post({action:'saveProject',project:result.projects[0]}).ok,false);
+assert.equal(post({action:'login',email:'peyaje531@gmail.com',password:'wrong'}).ok,false);
+const session=post({action:'login',email:'peyaje531@gmail.com',password:pass});assert(session.ok&&session.token);
+const oldRevision=result.revision;let p={...result.projects[0],nama:'Edited project',deskripsi:'=IMPORTXML("evil","//x")'};
+result=post({action:'saveProject',token:session.token,expectedRevision:oldRevision,project:p});assert.equal(result.ok,true);assert(sheets.get('projects').rows[1][4].startsWith("'="));
+assert.equal(post({action:'saveProject',token:session.token,expectedRevision:oldRevision,project:p}).ok,false);
+assert.equal(post({action:'saveProject',token:session.token,expectedRevision:result.revision,project:{...p,link:'javascript:alert(1)'}}).ok,false);
+const current=result;
+assert.equal(post({action:'saveProject',token:session.token,expectedRevision:current.revision,project:{...p,id:'sixth-featured'}}).ok,false);
+result=post({action:'saveProject',token:session.token,expectedRevision:current.revision,project:{...p,id:'sixth-project',featured_ring:false}});assert.equal(result.ok,true);assert.equal(result.projects.length,6);
+const lead={action:'lead',requestId:crypto.randomUUID(),nama:'QA User',whatsapp:'+6281234567890',kebutuhan:'WebApp UMKM',pesan:'=IMPORTXML("x", "//x")',consent:true,website:'',startedAt:Date.now()-5000};
+assert.equal(post({...lead,website:'bot'}).ok,false);assert.equal(post({...lead,consent:false}).ok,false);assert.equal(post({...lead,startedAt:Date.now()}).ok,false);
+assert.equal(post(lead).ok,true);assert.equal(post(lead).duplicate,true);assert.equal(sheets.get('leads').rows.length,3);assert(sheets.get('leads').rows[2][4].startsWith("'="));assert.equal(post({...lead,requestId:crypto.randomUUID()}).ok,false);
+assert.equal(post({action:'logout',token:session.token}).ok,true);assert.equal(post({action:'saveProject',token:session.token,expectedRevision:result.revision,project:p}).ok,false);
+for(let i=0;i<10;i++)post({action:'login',email:'peyaje531@gmail.com',password:'wrong'});assert.match(post({action:'login',email:'peyaje531@gmail.com',password:pass}).error,/Terlalu banyak/);
+assert.equal(ctx.doPost({postData:{contents:'not json'}}).ok,false);
+console.log('PASS: setup idempotency, private-data exclusion, login, logout, session checks, stale revision rejection, URL validation, featured limit, formula protection, lead consent, deduplication, honeypot, throttling and malformed requests.');
