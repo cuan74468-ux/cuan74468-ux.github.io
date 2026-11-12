@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/admin-workspace.css?v=20261112-v3">
+<link rel="stylesheet" href="css/admin-workspace.css?v=20261112-media-v4">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -74,12 +74,23 @@
         <div class="surface list-surface"><div class="list-toolbar"><label class="search-wrap"><span>⌕</span><input id="leadSearch" type="search" placeholder="Cari nama, WhatsApp, kebutuhan…"></label><select id="leadFilter" aria-label="Filter status"><option value="semua">Semua status</option><option value="baru">Baru</option><option value="diproses">Diproses</option><option value="selesai">Selesai</option><option value="arsip">Arsip</option></select></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Pengirim</th><th>Kebutuhan</th><th>Tanggal</th><th>Status</th><th>Detail</th></tr></thead><tbody id="leadRows"></tbody></table></div><div id="leadPager" class="pagination"></div></div>
       </section>
       <section id="view-media" class="view" aria-labelledby="mediaTitle">
-        <div class="page-heading"><div><p class="eyebrow">MEDIA LIBRARY</p><h1 id="mediaTitle">Media & aset gambar</h1><p>Lihat seluruh thumbnail proyek dan aset karakter yang digunakan halaman publik.</p></div><a class="button secondary" href="https://github.com/cuan74468-ux/cuan74468-ux.github.io/tree/main/assets" target="_blank" rel="noopener">Buka Folder Assets ↗</a></div><div class="inline-notice">Untuk aset lokal baru, unggah berkas melalui GitHub Web terlebih dahulu. Kemudian gunakan path <code>assets/nama-file.webp</code> dalam editor. CMS tidak meminta izin menulis file ke GitHub.</div><div id="mediaGrid" class="media-grid"></div>
+        <div class="page-heading"><div><p class="eyebrow">MEDIA LIBRARY</p><h1 id="mediaTitle">Pustaka Media</h1><p>Unggah gambar, tambahkan URL, ubah metadata, arsipkan, pulihkan, dan pilih aset untuk halaman atau proyek.</p></div>
+        <div class="head-actions"><button id="addMediaLink" type="button" class="button secondary">+ Tambah URL</button><button id="uploadMedia" type="button" class="button primary">↑ Unggah gambar</button></div></div>
+        <div id="mediaNotice" class="inline-notice">Memeriksa koneksi pustaka dan kesiapan unggah…</div>
+        <div class="surface list-surface">
+          <div class="list-toolbar"><label class="search-wrap"><span>⌕</span><input id="mediaSearch" type="search" placeholder="Cari nama, URL, deskripsi…"></label>
+            <select id="mediaFilter" aria-label="Filter pustaka media"><option value="active">Media aktif</option><option value="archived">Arsip</option><option value="all">Semua media</option></select>
+            <button id="refreshMedia" type="button" class="button subtle small">↻ Segarkan</button>
+          </div>
+          <div id="mediaGrid" class="media-grid media-grid-library" aria-live="polite"></div>
+          <div id="mediaPager" class="pagination"></div>
+        </div>
+        <div class="media-legacy-section"><h2>Gambar yang sedang digunakan</h2><p class="muted">Termasuk file lama di GitHub. Kelola pemakaiannya melalui Editor Halaman atau Karya & Proyek.</p><div id="mediaUsedGrid" class="media-grid"></div></div>
       </section>
       <section id="view-history" class="view" aria-labelledby="historyTitle">
         <div class="page-heading"><div><p class="eyebrow">CONTENT HISTORY</p><h1 id="historyTitle">Riwayat publikasi</h1><p>Catatan perubahan konten. Pemulihan membutuhkan konfirmasi dan menyimpan versi sebelum pemulihan.</p></div><button id="refreshHistory" type="button" class="button secondary">↻ Muat ulang</button></div><div class="surface list-surface"><div class="table-scroll"><table class="data-table"><thead><tr><th>Waktu publikasi</th><th>Editor</th><th>ID versi</th><th>Tindakan</th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyPager" class="pagination"></div></div>
       </section>
-      <section id="view-settings" class="view" aria-labelledby="settingsTitle"><div class="page-heading"><div><p class="eyebrow">WORKSPACE SETTINGS</p><h1 id="settingsTitle">Pengaturan & integrasi</h1><p>Informasi koneksi dan panduan pengelolaan website.</p></div></div><div class="settings-grid"><article class="surface"><h2>Koneksi backend</h2><p id="settingsBackend" class="word-wrap">Memeriksa…</p><p class="muted">URL GAS diambil otomatis dari <code>config.json</code>. Anda tidak perlu menempelkannya pada setiap login.</p><button id="checkConnection" class="button secondary" type="button">Uji koneksi</button></article><article class="surface"><h2>Pengaturan platform</h2><p>Hosting: GitHub Pages (gratis). Data: Google Sheets + Apps Script. Media lokal: GitHub assets.</p><div class="settings-links"><a href="https://docs.google.com/spreadsheets/d/1VOJV8zmSJXc3afnh6ly34_8Rguue5R2t4EXemjouYeM/edit" target="_blank" rel="noopener">Database Google Sheets ↗</a><a href="https://github.com/cuan74468-ux/cuan74468-ux.github.io" target="_blank" rel="noopener">Source GitHub ↗</a></div></article></div></section>
+      <section id="view-settings" class="view" aria-labelledby="settingsTitle"><div class="page-heading"><div><p class="eyebrow">WORKSPACE SETTINGS</p><h1 id="settingsTitle">Pengaturan & integrasi</h1><p>Informasi koneksi dan panduan pengelolaan website.</p></div></div><div class="settings-grid"><article class="surface"><h2>Koneksi backend</h2><p id="settingsBackend" class="word-wrap">Memeriksa…</p><p class="muted">URL GAS diambil otomatis dari <code>config.json</code>. Anda tidak perlu menempelkannya pada setiap login.</p><button id="checkConnection" class="button secondary" type="button">Uji koneksi</button></article><article class="surface"><h2>Pengaturan platform</h2><p>Hosting: GitHub Pages (gratis). Data: Google Sheets + Apps Script. Media: GitHub Pages assets + media_library Google Sheets; upload menggunakan token GitHub yang hanya disimpan di Script Properties GAS.</p><div class="settings-links"><a href="https://docs.google.com/spreadsheets/d/1VOJV8zmSJXc3afnh6ly34_8Rguue5R2t4EXemjouYeM/edit" target="_blank" rel="noopener">Database Google Sheets ↗</a><a href="https://github.com/cuan74468-ux/cuan74468-ux.github.io" target="_blank" rel="noopener">Source GitHub ↗</a></div></article></div></section>
     </main>
   </div>
 </div>
@@ -87,5 +98,5 @@
 <aside id="detailDrawer" class="detail-drawer" hidden aria-label="Editor detail" aria-modal="true" role="dialog"><header><div><p class="eyebrow" id="drawerEyebrow">EDITOR</p><h2 id="drawerTitle">Detail</h2></div><button id="closeDrawer" type="button" class="icon-button" aria-label="Tutup">×</button></header><div id="drawerBody" class="drawer-body"></div><footer id="drawerFooter"></footer></aside>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="js/studio-schema.js?v=20261112-v3"></script>
-<script src="js/admin-workspace.js?v=20261112-v3"></script>
+<script src="js/admin-workspace.js?v=20261112-media-v4"></script>
 </body></html>
