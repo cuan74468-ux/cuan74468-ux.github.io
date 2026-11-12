@@ -72,7 +72,15 @@ function edit(item=null){
  form.append(makeFormField('alt_text','Alt text / deskripsi aksesibilitas',item?.alt_text||'','text',false));
  if(!item||item.kind==='external')form.append(makeFormField('url','Alamat gambar HTTPS atau path assets/',item?.url||'','text'));
  else form.append(el('p','drawer-meta','Gambar yang sudah diunggah memiliki URL tetap. Untuk mengganti gambar: upload file baru, lalu pilih pada editor konten atau proyek. Metadata dapat diedit.'));
- if(item){const img=el('img','drawer-preview');img.alt=item.title;img.src=safeImage(item.url);form.append(img);}
+ if(form.elements.url){
+  const img=el('img','drawer-preview');img.alt='Pratinjau URL gambar';img.hidden=true;
+  const notice=el('p','drawer-meta','Gunakan URL file gambar HTTPS langsung, bukan halaman berbagi Google Drive. Pratinjau akan memeriksa apakah gambar dapat tampil.');
+  const check=()=>{const src=safeImage(form.elements.url.value);img.hidden=!src;if(!src){notice.textContent='Masukkan URL HTTPS atau path assets/.';return;}
+    notice.textContent='Memeriksa gambar…';img.src=src;};
+  img.onload=()=>{notice.textContent='Gambar dapat ditampilkan. Pastikan memiliki izin penggunaan.';};
+  img.onerror=()=>{img.hidden=true;notice.textContent='Gambar tidak dapat ditampilkan. Periksa link langsung, izin akses, atau batasan hotlink.';};
+  form.elements.url.addEventListener('input',check);form.append(img,notice);check();
+ }else if(item){const img=el('img','drawer-preview');img.alt=item.title;img.src=safeImage(item.url);form.append(img);}
  const save=btn(item?'Simpan Perubahan':'Simpan Media URL','button primary',async()=>{
   if(!form.reportValidity())return;save.disabled=true;
   try{
