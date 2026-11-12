@@ -31,3 +31,22 @@
 .detail-drawer #mediaUploadForm .drawer-preview{height:215px;object-fit:contain}
 @media(max-width:720px){.media-grid-library{padding:13px;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.media-grid-library .media-card{padding:8px}.media-grid-library .media-card img{height:105px;aspect-ratio:auto}.media-card .button{width:100%;white-space:normal}.media-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.media-picker-grid .media-card img{height:95px}}
 @media(max-width:380px){.media-grid-library,.media-picker-grid{grid-template-columns:1fr}}
+
+
+/* Optional editorial content collection CRUD */
+.content-collection{margin:32px 0 26px}
+.content-collection .page-heading{align-items:center;margin-bottom:17px}
+.content-collection .page-heading h2{font-size:20px;margin-bottom:6px}
+.content-collection .page-heading p:last-child{font-size:12px;color:#7c8592;max-width:650px;margin:0}
+.content-block-list{display:flex;flex-direction:column}
+.content-item{display:flex;align-items:center;gap:20px;padding:18px 23px;border-bottom:1px solid #ecf0f4}
+.content-item:last-child{border-bottom:0}
+.content-thumb{width:92px;height:84px;object-fit:cover;flex:0 0 92px;border-radius:11px;background:#f0f2f5}
+.content-item-body{min-width:0;flex:1}
+.content-item-meta{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:11px;color:#8e96a3}
+.content-item h3{font-size:14px;font-family:var(--font-body,Geist,system-ui,sans-serif);margin:0 0 5px;letter-spacing:0}
+.content-item-body p{font-size:12px;color:#768295;margin:0;line-height:1.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.content-item-actions{display:flex;gap:8px;align-items:center}
+.content-block-list .empty-state{margin:0;padding:42px 15px}
+.content-collection .pagination{padding:15px 19px;border-top:1px solid #e9edf2}
+@media(max-width:720px){.content-item{flex-wrap:wrap;gap:11px;padding:15px}.content-item-body{flex:1 1 calc(100% - 115px)}.content-item-actions{width:100%;justify-content:flex-end}.content-collection .page-heading{align-items:flex-start}.content-collection .page-heading>.button{width:100%}}
