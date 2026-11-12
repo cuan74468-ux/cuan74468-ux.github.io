@@ -85,18 +85,27 @@
         <div class="surface list-surface"><div class="list-toolbar"><label class="search-wrap"><span>⌕</span><input id="leadSearch" type="search" placeholder="Cari nama, WhatsApp, kebutuhan…"></label><select id="leadFilter" aria-label="Filter status"><option value="semua">Semua status</option><option value="baru">Baru</option><option value="diproses">Diproses</option><option value="selesai">Selesai</option><option value="arsip">Arsip</option></select></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Pengirim</th><th>Kebutuhan</th><th>Tanggal</th><th>Status</th><th>Detail</th></tr></thead><tbody id="leadRows"></tbody></table></div><div id="leadPager" class="pagination"></div></div>
       </section>
       <section id="view-media" class="view" aria-labelledby="mediaTitle">
-        <div class="page-heading"><div><p class="eyebrow">MEDIA LIBRARY</p><h1 id="mediaTitle">Pustaka Media</h1><p>Unggah gambar, tambahkan URL, ubah metadata, arsipkan, pulihkan, dan pilih aset untuk halaman atau proyek.</p></div>
-        <div class="head-actions"><button id="addMediaLink" type="button" class="button secondary">+ Tambah URL</button><button id="uploadMedia" type="button" class="button primary">↑ Unggah gambar</button></div></div>
-        <div id="mediaNotice" class="inline-notice">Memeriksa koneksi pustaka dan kesiapan unggah…</div>
-        <div class="surface list-surface">
-          <div class="list-toolbar"><label class="search-wrap"><span>⌕</span><input id="mediaSearch" type="search" placeholder="Cari nama, URL, deskripsi…"></label>
-            <select id="mediaFilter" aria-label="Filter pustaka media"><option value="active">Media aktif</option><option value="archived">Arsip</option><option value="all">Semua media</option></select>
-            <button id="refreshMedia" type="button" class="button subtle small">↻ Segarkan</button>
+        <div class="page-heading"><div><p class="eyebrow">VISUAL ASSETS</p><h1 id="mediaTitle">Ganti Gambar Website</h1>
+          <p>Pilih gambar yang sedang tampil, tekan <strong>Ganti Gambar</strong>, lalu tempel URL atau path file baru dan simpan. Tidak perlu mencari field satu per satu.</p></div></div>
+        <section class="media-legacy-section" aria-labelledby="activeAssetsTitle">
+          <div class="section-heading"><h2 id="activeAssetsTitle">Gambar yang sedang digunakan</h2><span>Proyek · Karakter · Hero · SEO</span></div>
+          <div class="inline-notice">Cara mudah: <strong>1.</strong> Siapkan atau unggah gambar ke folder assets GitHub. <strong>2.</strong> Tekan Ganti Gambar pada kartu yang sesuai. <strong>3.</strong> Tempel path <code>assets/nama-file.webp</code> lalu Simpan. Penggantian proyek tidak memerlukan Pustaka Media V4.</div>
+          <div id="mediaUsedGrid" class="media-grid media-active-grid" aria-live="polite"></div>
+        </section>
+        <section class="media-library-extra" aria-labelledby="mediaLibraryTitle">
+          <div class="page-heading"><div><p class="eyebrow">OPTIONAL LIBRARY</p><h2 id="mediaLibraryTitle">Pustaka Gambar Tambahan</h2>
+            <p>Untuk menyimpan katalog gambar baru, mengedit metadata, mengarsipkan, dan melakukan upload otomatis. Memerlukan backend GAS V4.</p></div>
+            <div class="head-actions"><button id="addMediaLink" type="button" class="button secondary">+ Tambah URL</button><button id="uploadMedia" type="button" class="button primary">↑ Unggah gambar</button></div></div>
+          <div id="mediaNotice" class="inline-notice">Memeriksa koneksi pustaka dan kesiapan unggah…</div>
+          <div class="surface list-surface">
+            <div class="list-toolbar"><label class="search-wrap"><span>⌕</span><input id="mediaSearch" type="search" placeholder="Cari nama, URL, deskripsi…"></label>
+              <select id="mediaFilter" aria-label="Filter pustaka media"><option value="active">Media aktif</option><option value="archived">Arsip</option><option value="all">Semua media</option></select>
+              <button id="refreshMedia" type="button" class="button subtle small">↻ Segarkan</button>
+            </div>
+            <div id="mediaGrid" class="media-grid media-grid-library" aria-live="polite"></div>
+            <div id="mediaPager" class="pagination"></div>
           </div>
-          <div id="mediaGrid" class="media-grid media-grid-library" aria-live="polite"></div>
-          <div id="mediaPager" class="pagination"></div>
-        </div>
-        <div class="media-legacy-section"><h2>Gambar yang sedang digunakan</h2><p class="muted">Termasuk file lama di GitHub. Kelola pemakaiannya melalui Editor Halaman atau Karya & Proyek.</p><div id="mediaUsedGrid" class="media-grid"></div></div>
+        </section>
       </section>
       <section id="view-history" class="view" aria-labelledby="historyTitle">
         <div class="page-heading"><div><p class="eyebrow">CONTENT HISTORY</p><h1 id="historyTitle">Riwayat publikasi</h1><p>Catatan perubahan konten. Pemulihan membutuhkan konfirmasi dan menyimpan versi sebelum pemulihan.</p></div><button id="refreshHistory" type="button" class="button secondary">↻ Muat ulang</button></div><div class="surface list-surface"><div class="table-scroll"><table class="data-table"><thead><tr><th>Waktu publikasi</th><th>Editor</th><th>ID versi</th><th>Tindakan</th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyPager" class="pagination"></div></div>
