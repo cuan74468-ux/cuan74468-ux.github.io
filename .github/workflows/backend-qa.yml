@@ -27,3 +27,5 @@ jobs:
           for file in js/*.js; do node --check "$file"; done
       - name: Verify backend in isolated mock environment
         run: node tests/backend.test.cjs
+      - name: Verify CMS DOM lifecycle regressions
+        run: node tests/cms-dom.test.cjs
