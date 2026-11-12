@@ -62,6 +62,17 @@
         <div class="editor-layout"><div class="editor-groups"><label class="search-wrap"><span>⌕</span><input id="searchFields" type="search" placeholder="Cari konten..."></label><div id="fieldGroups" class="field-groups"></div></div>
           <div class="surface field-editor"><div class="field-editor-header"><div><span class="eyebrow">CONTENT EDITOR</span><h2 id="fieldGroupTitle">Pilih bagian</h2></div><span id="fieldGroupCount" class="hint"></span></div><form id="siteFields" autocomplete="off"></form><div id="fieldPager" class="pagination"></div></div>
         </div>
+        <section class="content-collection" aria-labelledby="contentCollectionTitle">
+          <div class="page-heading"><div><p class="eyebrow">DYNAMIC CONTENT</p><h2 id="contentCollectionTitle">Blok Konten Tambahan</h2><p>Tambah artikel singkat, cerita proyek, foto dan tombol tautan. Konten baru hanya tampil di website bila statusnya Diterbitkan.</p></div><button id="newContentBlock" type="button" class="button secondary">+ Tambah konten</button></div>
+          <div class="surface list-surface">
+            <div class="list-toolbar"><label class="search-wrap"><span>⌕</span><input id="contentSearch" type="search" placeholder="Cari judul atau isi konten…"></label>
+              <select id="contentFilter" aria-label="Status konten"><option value="all">Semua konten</option><option value="active">Diterbitkan</option><option value="draft">Draft</option><option value="archived">Arsip</option></select>
+              <button id="refreshContents" class="button subtle small" type="button">↻ Segarkan</button>
+            </div>
+            <div id="contentBlockList" class="content-block-list"></div>
+            <div id="contentBlockPager" class="pagination"></div>
+          </div>
+        </section>
         <div class="preview-toolbar"><div><strong>Pratinjau interaktif</strong><small>Memakai halaman asli dan perangkat simulasi</small></div><div class="device-buttons"><button type="button" data-device="desktop" class="is-on">Desktop</button><button type="button" data-device="mobile">Mobile</button><button id="previewChanges" type="button" class="button secondary small">Lihat perubahan</button><button id="resetPreview" type="button" class="button subtle small">Kembali ke publik</button></div></div>
         <div class="preview-stage"><iframe id="pagePreview" title="Pratinjau situs publik" src="./index.html" loading="lazy"></iframe></div>
       </section>
@@ -100,4 +111,5 @@
 <script src="js/studio-schema.js?v=20261112-v3"></script>
 <script src="js/admin-workspace.js?v=20261112-media-v4"></script>
 <script src="js/media-manager.js?v=20261112-media-v4"></script>
+<script src="js/content-manager.js?v=20261112-content-v4"></script>
 </body></html>
