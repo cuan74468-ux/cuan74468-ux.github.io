@@ -72,7 +72,7 @@ function setView(name){
  const titles={overview:'Ringkasan',pages:'Editor Halaman',projects:'Karya & Proyek',leads:'Inbox Pesan',media:'Media & Gambar',history:'Riwayat Publikasi',settings:'Pengaturan'};
  setStatus($('#crumb'),titles[name]);$('#sidebar').classList.remove('open');
  if(name==='overview')loadOverview();
- if(name==='pages'){renderGroups();renderFields();}
+ if(name==='pages'){renderGroups();renderFields();window.STUDIO_CONTENT?.load();}
  if(name==='projects')refreshProjects();
  if(name==='leads')loadLeads();
  if(name==='media')window.STUDIO_MEDIA?.load();
