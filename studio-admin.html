@@ -110,7 +110,28 @@
       <section id="view-history" class="view" aria-labelledby="historyTitle">
         <div class="page-heading"><div><p class="eyebrow">CONTENT HISTORY</p><h1 id="historyTitle">Riwayat publikasi</h1><p>Catatan perubahan konten. Pemulihan membutuhkan konfirmasi dan menyimpan versi sebelum pemulihan.</p></div><button id="refreshHistory" type="button" class="button secondary">↻ Muat ulang</button></div><div class="surface list-surface"><div class="table-scroll"><table class="data-table"><thead><tr><th>Waktu publikasi</th><th>Editor</th><th>ID versi</th><th>Tindakan</th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyPager" class="pagination"></div></div>
       </section>
-      <section id="view-settings" class="view" aria-labelledby="settingsTitle"><div class="page-heading"><div><p class="eyebrow">WORKSPACE SETTINGS</p><h1 id="settingsTitle">Pengaturan & integrasi</h1><p>Informasi koneksi dan panduan pengelolaan website.</p></div></div><div class="settings-grid"><article class="surface"><h2>Koneksi backend</h2><p id="settingsBackend" class="word-wrap">Memeriksa…</p><p class="muted">URL GAS diambil otomatis dari <code>config.json</code>. Anda tidak perlu menempelkannya pada setiap login.</p><button id="checkConnection" class="button secondary" type="button">Uji koneksi</button></article><article class="surface"><h2>Pengaturan platform</h2><p>Hosting: GitHub Pages (gratis). Data: Google Sheets + Apps Script. Media: GitHub Pages assets + media_library Google Sheets; upload menggunakan token GitHub yang hanya disimpan di Script Properties GAS.</p><div class="settings-links"><a href="https://docs.google.com/spreadsheets/d/1VOJV8zmSJXc3afnh6ly34_8Rguue5R2t4EXemjouYeM/edit" target="_blank" rel="noopener">Database Google Sheets ↗</a><a href="https://github.com/cuan74468-ux/cuan74468-ux.github.io" target="_blank" rel="noopener">Source GitHub ↗</a></div></article></div></section>
+      <section id="view-settings" class="view" aria-labelledby="settingsTitle">
+        <div class="page-heading"><div><p class="eyebrow">WORKSPACE SETTINGS</p><h1 id="settingsTitle">Pengaturan & integrasi</h1><p>Periksa kemampuan backend dan lihat tindakan yang masih bisa digunakan.</p></div></div>
+        <div class="settings-grid">
+          <article class="surface"><h2>Koneksi backend</h2><p id="settingsBackend" class="word-wrap">Memeriksa…</p>
+            <p class="muted">Alamat GAS diambil dari <code>config.json</code>. Tidak perlu menempelkannya lagi setiap login.</p>
+            <button id="checkConnection" class="button secondary" type="button">Uji koneksi & versi</button></article>
+          <article class="surface"><h2>Arsitektur website</h2>
+            <p>Hosting: GitHub Pages · Data: Google Sheets + Apps Script · Aset publik: GitHub.</p>
+            <p>Pergantian gambar aktif menggunakan API proyek/halaman lama bila tersedia. CRUD pustaka media dan upload otomatis membutuhkan GAS V4; upload juga membutuhkan token GitHub yang disimpan di Script Properties GAS.</p>
+            <div class="settings-links"><a href="https://docs.google.com/spreadsheets/d/1VOJV8zmSJXc3afnh6ly34_8Rguue5R2t4EXemjouYeM/edit" target="_blank" rel="noopener">Database Google Sheets ↗</a>
+              <a href="https://github.com/cuan74468-ux/cuan74468-ux.github.io" target="_blank" rel="noopener">Source GitHub ↗</a></div>
+          </article>
+        </div>
+        <article class="surface diagnostics">
+          <div class="section-heading"><div><h2>Diagnostik Modul Admin</h2><p class="muted micro">Pemeriksaan baca saja. Tidak membuat, mengubah, atau menghapus data.</p></div>
+            <button id="diagnoseModules" type="button" class="button secondary">Periksa Semua Modul</button></div>
+          <div id="diagnosticResults" class="diagnostic-results" aria-live="polite">
+            <p class="muted">Klik Periksa Semua Modul untuk mengetahui fitur yang tersedia pada deployment GAS saat ini.</p>
+          </div>
+          <p class="muted micro">Hasil 'tersambung' hanya membuktikan API baca tersedia. Upload, simpan, dan penghapusan tetap membutuhkan pengujian terpisah.</p>
+        </article>
+      </section>
     </main>
   </div>
 </div>
