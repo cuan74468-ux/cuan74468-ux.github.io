@@ -409,3 +409,6 @@ html.lite .hero-bg i,html.lite .glow i{animation:none!important}
   .nav ul{gap:4px}
   .nav .quick-wa{padding:0 8px 0 4px}
 }
+
+/* Tablet fallback: preserve full available width without squeezing nav items. */
+@media(min-width:601px) and (max-width:800px){.nav{width:calc(100% - 32px);justify-content:space-between}}
