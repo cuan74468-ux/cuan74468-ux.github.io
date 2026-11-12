@@ -101,6 +101,59 @@ assert.equal(post({action:'saveSite',token:session.token,expectedSiteRevision:pa
 assert.equal(post({action:'saveSite',token:session.token,expectedSiteRevision:pageNow.siteRevision,content:{'skills.color1':'red'}}).ok,false);
 assert.equal(post({action:'saveSite',token:session.token,expectedSiteRevision:pageNow.siteRevision,content:{'hero.ctaUrl':'#contact','skills.color1':'#FFE38A'}}).ok,true);
 
+
+// MEDIA V4: strictly private, idempotent schema setup, safe CRUD, and secure
+// image upload to GitHub through server-only fine-grained credentials.
+assert.equal(sheets.get('media_library').rows[0].length,10);
+assert.equal(post({action:'mediaList'}).ok,false,'Media metadata is admin-only');
+const beforeMedia=post({action:'mediaList',token:session.token,page:1});
+assert.equal(beforeMedia.ok,true);
+assert.equal(beforeMedia.total,0);
+assert.equal(beforeMedia.uploadConfigured,false);
+assert.equal(post({action:'mediaSave',title:'Untrusted',url:'https://cdn.example.org/test.webp'}).ok,false);
+assert.equal(post({action:'mediaSave',token:session.token,title:'Unsafe',url:'javascript:alert(1)'}).ok,false);
+let link=post({action:'mediaSave',token:session.token,title:'Portrait studio',alt_text:'Photo owner',url:'https://images.example.org/portrait.webp'});
+assert.equal(link.ok,true);
+assert.equal(link.item.kind,'external');
+assert.equal(link.item.url,'https://images.example.org/portrait.webp');
+assert.equal(post({action:'mediaSave',token:session.token,id:link.item.id,expectedUpdatedAt:'outdated',title:'Renamed',url:link.item.url}).ok,false);
+let changed=post({action:'mediaSave',token:session.token,id:link.item.id,expectedUpdatedAt:link.item.updated_at,title:'Portrait baru',alt_text:'Portrait profesional',url:'https://images.example.org/portrait2.webp'});
+assert.equal(changed.ok,true);assert.equal(changed.item.title,'Portrait baru');
+assert.equal(changed.item.url,'https://images.example.org/portrait2.webp');
+let listed=post({action:'mediaList',token:session.token,page:1,search:'portrait'});
+assert.equal(listed.total,1);
+assert.equal(post({action:'mediaArchive',token:session.token,id:changed.item.id,expectedUpdatedAt:changed.item.updated_at}).ok,true);
+listed=post({action:'mediaList',token:session.token,status:'archived'});
+assert.equal(listed.total,1);
+assert.equal(post({action:'mediaRestore',token:session.token,id:listed.items[0].id,expectedUpdatedAt:listed.items[0].updated_at}).ok,true);
+const used=post({action:'mediaSave',token:session.token,title:'Current product cover',url:result.projects[0].thumbnail});
+assert.equal(used.ok,true);
+assert.equal(post({action:'mediaArchive',token:session.token,id:used.item.id,expectedUpdatedAt:used.item.updated_at}).ok,false,'Media referenced by active projects cannot be archived');
+assert.equal(post({action:'mediaUpload',token:session.token,title:'No token',mime:'image/webp',base64:'AA=='}).ok,false);
+let githubCalls=0;
+props.set('MEDIA_GITHUB_TOKEN','unit-test-only-gh-token');
+ctx.UrlFetchApp={fetch:(url,opts)=>{
+ githubCalls++;
+ assert.match(url,/^https:\/\/api\.github\.com\/repos\/cuan74468-ux\/cuan74468-ux\.github\.io\/contents\/assets\/uploads\//);
+ assert.equal(opts.method,'put');
+ assert.equal(opts.headers.Authorization,'Bearer unit-test-only-gh-token');
+ const body=JSON.parse(opts.payload);
+ assert(!JSON.stringify(body).includes('unit-test-only-gh-token'),'PAT must never be transmitted in upload payload');
+ assert.equal(body.branch,'main');assert.equal(typeof body.content,'string');
+ return {getResponseCode:()=>201,getContentText:()=>JSON.stringify({content:{sha:'test-commit-sha'},commit:{sha:'test-sha'}})};
+}};
+assert.equal(post({action:'mediaUpload',token:session.token,title:'Wrong mime',mime:'text/html',base64:'AA=='}).ok,false);
+const bytes=Buffer.alloc(48);Buffer.from('RIFF').copy(bytes,0);Buffer.from('WEBP').copy(bytes,8);
+const upload=post({action:'mediaUpload',token:session.token,title:'Upload example',alt_text:'Photo',mime:'image/webp',base64:bytes.toString('base64')});
+assert.equal(upload.ok,true,upload.error||'Upload must succeed in mocked GitHub');
+assert.equal(upload.item.kind,'upload');assert.match(upload.item.url,/^assets\/uploads\/[a-f0-9]+\.webp$/);
+assert.equal(githubCalls,1);assert.equal(sheets.get('media_library').rows.length,4);
+assert(!JSON.stringify(upload).includes('unit-test-only-gh-token'),'PAT must not leak into response');
+assert.equal(post({action:'mediaSave',token:session.token,id:upload.item.id,expectedUpdatedAt:upload.item.updated_at,title:'Changed',url:'https://evil.example.org/' }).ok,true);
+const savedFile=post({action:'mediaList',token:session.token,search:'Changed'}).items[0];
+assert.equal(savedFile.url,upload.item.url,'Uploaded URLs are immutable via metadata edit');
+assert.equal(post({action:'mediaArchive',token:session.token,id:upload.item.id,expectedUpdatedAt:savedFile.updated_at}).ok,true);
+
 assert.equal(post({action:'logout',token:session.token}).ok,true);assert.equal(post({action:'saveProject',token:session.token,expectedRevision:result.revision,project:p}).ok,false);
 for(let i=0;i<10;i++)post({action:'login',email:'peyaje531@gmail.com',password:'wrong'});assert.match(post({action:'login',email:'peyaje531@gmail.com',password:pass}).error,/Terlalu banyak/);
 assert.equal(ctx.doPost({postData:{contents:'not json'}}).ok,false);
