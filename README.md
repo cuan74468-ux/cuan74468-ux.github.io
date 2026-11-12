@@ -1,30 +1,46 @@
 # Ferry — Linggau AI Studio
 
-Portofolio statis: HTML, CSS, JavaScript biasa. Tidak membutuhkan npm, build, Vercel, atau server Node.js untuk hosting. Empat blok JavaScript dimuat berurutan setelah Matter.js 0.19.0 dari cdnjs.
+Portofolio statis: HTML, CSS, JavaScript biasa. Tidak membutuhkan npm, build, Vercel, atau server Node.js untuk hosting. Modul JavaScript statis dimuat berurutan setelah Matter.js 0.19.0 dari cdnjs.
 
-## Status 12 November 2026
+## Status implementasi CMS V2 — 12 November 2026
 
-- Database baru `Linggau_AI_Studio_Portfolio_DB` dibuat di akun Drive **elangputihllg@gmail.com**. Sheet lama tidak digunakan.
-- Database: https://docs.google.com/spreadsheets/d/1VOJV8zmSJXc3afnh6ly34_8Rguue5R2t4EXemjouYeM/edit
-- Lima proyek default, cincin 20 kartu, studi kasus dalam modal, katalog, 10 chip fisika, kontak WhatsApp/email, serta CMS tersedia dalam kode.
-- **Backend belum diterbitkan.** `config.json` memakai `gasUrl` kosong dengan sengaja; tidak ada endpoint palsu. Form menampilkan status belum aktif sampai Web app diterbitkan dan URL aslinya diisi.
-- **Kondisi admin sebelum setup:** kolom `admin.password` masih berformat `pending$…`, bukan verifier final. Fungsi `setupDatabase()` wajib dijalankan dari editor Apps Script agar nilai menjadi `hmac-sha256$…` dan rahasia HMAC disimpan di Script Properties. Endpoint `?action=health` sekarang mengembalikan `ready:false` sampai setup berhasil. Jangan publikasikan Sheet admin.
-- **QA otomatis tanpa build:** workflow `.github/workflows/backend-qa.yml` menjalankan `node tests/backend.test.cjs` saat file backend atau tes berubah. Node dipakai hanya untuk unit test, bukan untuk membangun situs GitHub Pages.
-- Password admin tidak ada dalam repo. Database privat memuat verifier dari password yang diberikan Ferry. `setupDatabase()` mengubahnya menjadi HMAC dengan pepper privat di Script Properties.
-- Uji lokal menggunakan mock GAS; pengujian end-to-end Google Apps Script harus dilakukan setelah deployment.
+- GitHub Pages tetap berupa HTML/CSS/JavaScript murni tanpa Vercel, npm, atau langkah build.
+- Repository mengandung editor CMS V2 untuk konten publik, proyek, karakter, warna, font, kontak, dan metadata SEO.
+- Spreadsheet yang dipakai: https://docs.google.com/spreadsheets/d/1VOJV8zmSJXc3afnh6ly34_8Rguue5R2t4EXemjouYeM/edit
+- Lima tab database: `projects` (5 proyek), `leads` (pesan masuk), `admin` (verifier login privat), `site_content` (isi halaman), `site_history` (cadangan revisi).
+- URL GAS yang diberikan pemilik sudah dipasang pada `config.json`. **Memperbarui `Code.gs` di GitHub TIDAK otomatis memperbarui Apps Script yang berjalan.** Pemilik harus memasang kode terbaru pada editor GAS dan menerbitkan versi deployment baru.
+- Data proyek, pesan pengunjung, dan login tidak direset dalam migrasi ini.
+- `.github/workflows/backend-qa.yml` memeriksa syntax frontend dan GAS serta tes backend dengan mock. QA ini bukan bukti browser publik dan GAS sudah terintegrasi secara end-to-end.
 
-## Aktivasi backend — melalui browser
+## Satu kali aktivasi CMS V2 di Apps Script
 
-1. Buka database di atas dengan akun **elangputihllg@gmail.com**. Pilih **Extensions / Ekstensi → Apps Script**.
-2. Ganti isi `Code.gs` dengan file `Code.gs` dari repo ini, lalu simpan. Nama proyek: `Linggau AI Studio Backend`.
-3. Jalankan fungsi **setupDatabase**. Selesaikan otorisasi Google pada akun pemilik. Fungsi ini mempertahankan proyek dan leads yang sudah ada; tidak melakukan reset database.
-4. Pilih **Deploy → New deployment → Web app**. **Execute as: Me**, **Who has access: Anyone**. Terbitkan dan salin URL berakhiran **/exec**. Jangan membagikan Sheet secara publik; endpoint hanya mengembalikan data proyek yang memang publik.
-5. Jalankan **getFrontendConfig**. Salin JSON dari Execution log dan ganti isi `config.json` di root repo GitHub. Commit ke `main`.
-6. Buka portofolio. Klik badge status **tiga kali cepat**, atau gunakan `#/linggau-core-session`. Login dengan email **peyaje531@gmail.com** dan password awal yang Anda berikan dalam instruksi. Akun login CMS berbeda dari akun pemilik Google Drive.
+1. Buka database di atas dengan akun pemilik. Pilih **Ekstensi → Apps Script**.
+2. Buka `Code.gs` di GitHub: https://github.com/cuan74468-ux/cuan74468-ux.github.io/blob/main/Code.gs
+3. Salin **seluruh** isi `Code.gs` ke file `Code.gs` pada editor Apps Script; simpan. Jangan mengubah `STUDIO_DB_ID` untuk database ini.
+4. Pilih fungsi **setupDatabase** lalu **Run/Jalankan**, setujui izin jika diminta. Operasi ini idempotent: tidak menghapus baris proyek atau leads, hanya melengkapi tab/header dan memproses verifier admin bila perlu.
+5. Buka **Deploy → Manage deployments / Kelola deployment**. Pilih deployment Web App yang sudah ada, klik **Edit (pensil)**, pilih **New version / Versi baru**, kemudian **Deploy**. Jangan membuat deployment baru bila ingin mempertahankan URL `/exec` yang telah dipasang pada website.
+6. Cek `/exec?action=health` harus mengembalikan `"ok":true` dan `"ready":true`. Cek `/exec?action=projects` harus memuat `projects`, `content`, dan `siteRevision`; tidak boleh berisi password, hash admin, atau leads.
+7. Buka https://cuan74468-ux.github.io/#/linggau-core-session atau klik badge status tiga kali cepat. Login dengan akun admin yang sudah dikonfigurasi. Pilih tab **Seluruh Konten Website**.
 
-Alternatif langkah 5: pada modal admin buka **Hubungkan backend Apps Script**, tempel URL `/exec`, pilih **Uji koneksi**, lalu **Unduh config.json**. Unggah file itu ke root repo. Pengujian URL di modal saja hanya mengaktifkan sesi browser saat itu; semua pengunjung membutuhkan konfigurasi yang dikomit.
+Jika CMS menampilkan "Backend CMS v2 perlu diaktifkan", URL GAS sudah terbaca tetapi deployment GAS belum menggunakan kode CMS terbaru atau respons GAS tidak lengkap. Deploy ulang **versi baru** pada deployment yang sama; tidak perlu mengubah `config.json`.
 
-Jika memasang ulang pada Sheet baru yang benar-benar kosong, ganti `STUDIO_DB_ID` dan tambahkan Script Property `ADMIN_INITIAL_PASSWORD` dengan password pribadi minimal 12 karakter sebelum menjalankan setup. Property bootstrap dihapus oleh setup. Untuk database yang sudah disiapkan dalam tugas ini, langkah tersebut tidak diperlukan.
+## Menggunakan editor CMS
+
+- **Karya & Proyek:** menambah/edit proyek, thumbnail, teks tooltip, kategori, link demo, dan penanda cincin utama. Maksimal lima proyek unggulan.
+- **Seluruh Konten Website:** editor per seksi untuk navbar, hero, About, proses, 10 chip keahlian, formulir, kontak, teks studi kasus, footer, SEO, warna, font, dan mode karakter.
+- **Pratinjau halaman:** menampilkan draf hanya pada browser admin saat ini; tidak mengubah database. Untuk kembali buka CMS dengan klik badge tiga kali lalu pilih **Batalkan pratinjau**.
+- **Simpan & Terbitkan:** menulis konten tervalidasi ke `site_content`, menyimpan versi sebelum perubahan ke `site_history`, dan memperbarui halaman yang sedang dibuka. Pengunjung lain melihat perubahan saat memuat ulang.
+- **Pulihkan versi sebelumnya:** kembali ke versi terakhir yang dicadangkan; lakukan setelah memastikan draf tidak diperlukan.
+- **Aset gambar:** editor menerima URL HTTPS atau path `assets/...` yang sudah tersedia di GitHub. **Belum ada unggah file gambar langsung dari CMS.** Upload file baru ke repository dulu sebelum mengisi path.
+- **Karakter:** mode `animated` hanya sesuai untuk sprite dengan struktur/koordinat asli. Karakter gambar lain muncul sebagai gambar statis; mode `hidden` menyembunyikannya. Posisi horizontal dan ukuran juga dapat diatur.
+- **Chip fisika:** jumlah tetap sepuluh; judul dapat diedit dan tata letak memakai indeks stabil, bukan label yang dapat diganti.
+
+## Keamanan data CMS
+
+- Google Sheet **harus tetap privat**. Tab `admin` dan `site_history` tidak disajikan ke publik.
+- API GET hanya mengembalikan proyek dan konten publik (serta health). Operasi perubahan memakai sesi admin yang diperiksa server, batasan input, kunci penulisan, dan pengecekan revisi.
+- Konten ditampilkan sebagai teks biasa, bukan HTML bebas; URL dan pengaturan sensitif divalidasi.
+- Jangan memasukkan password rahasia ke editor konten ataupun repository.
 
 ## Memperbarui proyek
 
@@ -40,7 +56,7 @@ Pada **Settings → Pages**, gunakan **Deploy from a branch → main → /(root)
 
 ## Keamanan dan batas operasional
 
-- API publik hanya menyediakan `projects` dan `health`; tidak ada endpoint pembacaan leads/admin.
+- API publik menyediakan proyek, konten halaman publik, dan `health`; tidak ada endpoint pembacaan leads/admin/riwayat privat.
 - Penulisan proyek membutuhkan token sesi dua jam. Token disimpan dalam memori tab, bukan localStorage atau URL. Cache Google dapat menghapus sesi lebih awal sehingga login ulang diperlukan.
 - Password diverifikasi melalui salted SHA-256 yang dibungkus HMAC-SHA-256 dengan pepper privat. Ini bukan bcrypt/Argon2; jangan gunakan ulang password akun utama. Jangan membagikan Sheet atau Script Properties.
 - Maksimal 10 percobaan login per 15 menit secara global, dengan reset setelah login berhasil. Pembatasan sederhana ini dapat dipakai penyerang untuk menunda login; bukan perlindungan DDoS penuh.
