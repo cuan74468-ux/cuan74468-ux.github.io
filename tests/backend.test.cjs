@@ -2,8 +2,8 @@ const fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto'),
 class Sheet {
  constructor(){this.rows=[];}
  getLastRow(){return this.rows.length;}
- getRange(r,c,n=1,m=1){const self=this;return {getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>self.rows[r+i-1]?.[c+j-1]??'')),setValues:rows=>{rows.forEach((row,i)=>{self.rows[r+i-1]??=[];row.forEach((v,j)=>self.rows[r+i-1][c+j-1]=v);});return this;},setValue:v=>{self.rows[r-1]??=[];self.rows[r-1][c-1]=v;},setBackground:()=>({setFontWeight:()=>{}}),createTextFinder:id=>({matchEntireCell:()=>({findNext:()=>self.rows.slice(r-1,r+n-1).some(row=>row[c-1]===id)})})};}
- appendRow(row){this.rows.push(row);}setFrozenRows(){}
+ getRange(r,c,n=1,m=1){const self=this;return {getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>self.rows[r+i-1]?.[c+j-1]??'')),setValues:rows=>{rows.forEach((row,i)=>{self.rows[r+i-1]??=[];row.forEach((v,j)=>self.rows[r+i-1][c+j-1]=v);});return this;},setValue:v=>{self.rows[r-1]??=[];self.rows[r-1][c-1]=v;},clearContent:()=>{for(let i=r-1;i<r-1+n;i++)for(let j=c-1;j<c-1+m;j++){if(self.rows[i])self.rows[i][j]='';}},setBackground:()=>({setFontWeight:()=>{}}),createTextFinder:id=>({matchEntireCell:()=>({findNext:()=>self.rows.slice(r-1,r+n-1).some(row=>row[c-1]===id)})})};}
+ appendRow(row){this.rows.push(row);}deleteRow(r){this.rows.splice(r-1,1);}setFrozenRows(){}
 }
 const sheets=new Map(),props=new Map(),cache=new Map();
 const propertyApi={getProperty:k=>props.get(k)||null,setProperty:(k,v)=>props.set(k,v),deleteProperty:k=>props.delete(k)};
@@ -24,6 +24,26 @@ let result=ctx.doGet({parameter:{action:'projects'}});assert.equal(result.projec
 assert.equal(post({action:'saveProject',project:result.projects[0]}).ok,false);
 assert.equal(post({action:'login',email:'peyaje531@gmail.com',password:'wrong'}).ok,false);
 const session=post({action:'login',email:'peyaje531@gmail.com',password:pass});assert(session.ok&&session.token);
+const beforeSite=ctx.doGet({parameter:{action:'projects'}});
+assert.equal(typeof beforeSite.siteRevision,'string');
+assert.equal(Object.keys(beforeSite.content).length,0);
+const siteSample={'hero.headline2':'Kini konten dapat diedit','contact.email':'editor@example.org','contact.whatsapp':'6289509016792','character.mode':'static','character.scale':'105','theme.paper':'#FAFAFC','about.bio1':'=FORMULA("attack")'};
+assert.equal(post({action:'saveSite',content:siteSample,expectedSiteRevision:beforeSite.siteRevision}).ok,false,'Site writes require authentication');
+let siteSaved=post({action:'saveSite',token:session.token,expectedSiteRevision:beforeSite.siteRevision,content:siteSample});
+assert.equal(siteSaved.ok,true);
+assert.equal(siteSaved.content['hero.headline2'],'Kini konten dapat diedit');
+assert.equal(siteSaved.content['contact.email'],'editor@example.org');
+assert.equal(sheets.get('site_content').rows.length,Object.keys(siteSample).length+1);
+assert(!JSON.stringify(siteSaved).includes('hmac-sha256'));
+assert.equal(post({action:'saveSite',token:session.token,expectedSiteRevision:beforeSite.siteRevision,content:siteSample}).ok,false,'Stale write rejected');
+assert.equal(post({action:'saveSite',token:session.token,expectedSiteRevision:siteSaved.siteRevision,content:{...siteSample,'character.scale':'200'}}).ok,false);
+assert.equal(post({action:'saveSite',token:session.token,expectedSiteRevision:siteSaved.siteRevision,content:{...siteSample,'hero.waveImage':'javascript:alert(1)'}}).ok,false);
+assert.equal(post({action:'saveSite',token:session.token,expectedSiteRevision:siteSaved.siteRevision,content:{...siteSample,'theme.paper':'red'}}).ok,false);
+const restoredSite=post({action:'revertSite',token:session.token,expectedSiteRevision:siteSaved.siteRevision});
+assert.equal(restoredSite.ok,true);
+assert.equal(Object.keys(restoredSite.content).length,0);
+assert.equal(post({action:'revertSite',token:'wrong',expectedSiteRevision:restoredSite.siteRevision}).ok,false);
+
 const oldRevision=result.revision;let p={...result.projects[0],nama:'Edited project',deskripsi:'=IMPORTXML("evil","//x")'};
 result=post({action:'saveProject',token:session.token,expectedRevision:oldRevision,project:p});assert.equal(result.ok,true);assert(sheets.get('projects').rows[1][4].startsWith("'="));
 assert.equal(post({action:'saveProject',token:session.token,expectedRevision:oldRevision,project:p}).ok,false);
@@ -37,4 +57,4 @@ assert.equal(post(lead).ok,true);assert.equal(post(lead).duplicate,true);assert.
 assert.equal(post({action:'logout',token:session.token}).ok,true);assert.equal(post({action:'saveProject',token:session.token,expectedRevision:result.revision,project:p}).ok,false);
 for(let i=0;i<10;i++)post({action:'login',email:'peyaje531@gmail.com',password:'wrong'});assert.match(post({action:'login',email:'peyaje531@gmail.com',password:pass}).error,/Terlalu banyak/);
 assert.equal(ctx.doPost({postData:{contents:'not json'}}).ok,false);
-console.log('PASS: setup idempotency, private-data exclusion, login, logout, session checks, stale revision rejection, URL validation, featured limit, formula protection, lead consent, deduplication, honeypot, throttling and malformed requests.');
+console.log('PASS: CMS site save, restore, validation, locking, setup idempotency, private-data exclusion, login, logout, session checks, stale revision rejection, URL validation, featured limit, formula protection, lead consent, deduplication, honeypot, throttling and malformed requests.');
