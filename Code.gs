@@ -25,14 +25,14 @@ function siteState_(){
  const content={};rows.forEach(r=>{const key=String(r[0]);if(/^[a-z][a-zA-Z0-9_.-]{1,79}$/.test(key))content[key]=String(r[1]??'');});
  return {content:content,siteRevision:digest_(JSON.stringify(content))};
 }
-function publicData_(){const projects=projects_();return {ok:true,projects:projects,revision:digest_(JSON.stringify(projects)),...siteState_()};}
+function publicData_(){const projects=projects_();return {ok:true,projects:projects,revision:digest_(JSON.stringify(projects)),blocks:publishedBlocks_(),...siteState_()};}
 /** Idempotent: create missing headers and seeds, never clear leads or overwrite existing projects. */
 function setupDatabase(){
  const lock=LockService.getScriptLock();lock.waitLock(20000);
  try{
   const db=database_(),props=PropertiesService.getScriptProperties();
   if(!props.getProperty('ADMIN_PEPPER'))props.setProperty('ADMIN_PEPPER',Utilities.getUuid()+Utilities.getUuid());
-  [['projects',PROJECT_HEADERS],['leads',LEAD_HEADERS],['admin',ADMIN_HEADERS],['site_content',['key','value','updated_at']],['site_history',['id','tanggal','admin','snapshot_json']],['lead_meta',['lead_id','status','catatan','updated_at']],['project_archive',PROJECT_HEADERS.concat(['archived_at','archived_by'])],['media_library',['id','title','kind','url','alt_text','github_path','github_sha','created_at','updated_at','status']]].forEach(([name,headers])=>{
+  [['projects',PROJECT_HEADERS],['leads',LEAD_HEADERS],['admin',ADMIN_HEADERS],['site_content',['key','value','updated_at']],['site_history',['id','tanggal','admin','snapshot_json']],['lead_meta',['lead_id','status','catatan','updated_at']],['project_archive',PROJECT_HEADERS.concat(['archived_at','archived_by'])],['media_library',['id','title','kind','url','alt_text','github_path','github_sha','created_at','updated_at','status']],['content_blocks',['id','title','body','image_url','button_text','button_url','sort_order','status','created_at','updated_at']]].forEach(([name,headers])=>{
    let sh=db.getSheetByName(name);if(!sh)sh=db.insertSheet(name);
    if(sh.getLastRow()===0)sh.getRange(1,1,1,headers.length).setValues([headers]);
    if(JSON.stringify(sh.getRange(1,1,1,headers.length).getValues()[0])!==JSON.stringify(headers))throw Error('Header '+name+' berbeda; tidak diubah.');
@@ -165,7 +165,7 @@ function doPost(e){
  try{
   if(!e||!e.postData||e.postData.contents.length>1450000)throw Error('Permintaan terlalu besar.');const b=JSON.parse(e.postData.contents);if(b.action!=='mediaUpload'&&e.postData.contents.length>100000)throw Error('Permintaan tidak valid.');
   lock=LockService.getScriptLock();lock.waitLock(15000);let result;
-  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'workspaceOverview':result=workspaceOverview_(b);break;case 'workspaceLeads':result=workspaceLeads_(b);break;case 'workspaceSaveLead':result=workspaceSaveLead_(b);break;case 'workspaceArchiveProject':result=workspaceArchiveProject_(b);break;case 'workspaceArchivedProjects':result=workspaceArchivedProjects_(b);break;case 'workspaceRestoreProject':result=workspaceRestoreProject_(b);break;case 'workspaceHistory':result=workspaceHistory_(b);break;case 'workspaceRestoreHistory':result=workspaceRestoreHistory_(b);break;case 'mediaList':result=mediaList_(b);break;case 'mediaSave':result=mediaSave_(b);break;case 'mediaArchive':result=mediaArchive_(b);break;case 'mediaRestore':result=mediaRestore_(b);break;case 'mediaUpload':result=mediaUpload_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
+  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'workspaceOverview':result=workspaceOverview_(b);break;case 'workspaceLeads':result=workspaceLeads_(b);break;case 'workspaceSaveLead':result=workspaceSaveLead_(b);break;case 'workspaceArchiveProject':result=workspaceArchiveProject_(b);break;case 'workspaceArchivedProjects':result=workspaceArchivedProjects_(b);break;case 'workspaceRestoreProject':result=workspaceRestoreProject_(b);break;case 'workspaceHistory':result=workspaceHistory_(b);break;case 'workspaceRestoreHistory':result=workspaceRestoreHistory_(b);break;case 'mediaList':result=mediaList_(b);break;case 'mediaSave':result=mediaSave_(b);break;case 'mediaArchive':result=mediaArchive_(b);break;case 'mediaRestore':result=mediaRestore_(b);break;case 'mediaUpload':result=mediaUpload_(b);break;case 'contentList':result=contentList_(b);break;case 'contentSave':result=contentSave_(b);break;case 'contentArchive':result=contentArchive_(b);break;case 'contentRestore':result=contentRestore_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
   return json_(result);
  }catch(err){return json_({ok:false,error:String(err.message||'Permintaan gagal.').slice(0,200)});}finally{if(lock)lock.releaseLock();}
 }
@@ -272,6 +272,67 @@ function workspaceRestoreHistory_(b){
 }
 
 
+
+/* Dynamic public content blocks: optional rows; no existing page section is
+   removed or replaced. Titles, description and URLs are all text-only. */
+const CONTENT_HEADERS=['id','title','body','image_url','button_text','button_url','sort_order','status','created_at','updated_at'];
+function contentRows_(){return rows_('content_blocks',CONTENT_HEADERS).filter(r=>r[0]);}
+function contentObject_(row){return Object.fromEntries(CONTENT_HEADERS.map((k,i)=>[k,String(row[i]??'')]));}
+function publishedBlocks_(){
+ return contentRows_().filter(r=>String(r[7])==='active').map(contentObject_)
+  .sort((a,b)=>Number(a.sort_order)-Number(b.sort_order)||a.created_at.localeCompare(b.created_at))
+  .slice(0,60);
+}
+function contentList_(b){
+ session_(b.token);
+ const status=['all','active','draft','archived'].includes(b.status)?b.status:'all';
+ const q=String(b.search||'').toLowerCase().slice(0,100);
+ const page=Math.max(1,Math.min(100000,parseInt(b.page,10)||1)),limit=Math.min(25,Math.max(5,parseInt(b.limit,10)||10));
+ const items=contentRows_().map(contentObject_).filter(x=>(status==='all'||x.status===status)&&(!q||[x.title,x.body,x.button_text].some(v=>v.toLowerCase().includes(q))));
+ items.sort((a,b)=>Number(a.sort_order)-Number(b.sort_order)||b.updated_at.localeCompare(a.updated_at));
+ const pages=Math.max(1,Math.ceil(items.length/limit)),actual=Math.min(page,pages);
+ return {ok:true,items:items.slice((actual-1)*limit,actual*limit),total:items.length,pages,page:actual};
+}
+function contentSave_(b){
+ session_(b.token);
+ const title=text_(b.title,2,150,'Judul'),body=text_(b.body,5,4000,'Isi konten');
+ const image=String(b.image_url||'').trim();if(image)validUrl_(image,true);
+ const buttonText=text_(String(b.button_text||''),0,80,'Label tombol');
+ const buttonURL=String(b.button_url||'').trim();
+ if(buttonURL){if(!buttonText)throw Error('Isi label tombol.');if(!/^#(?:about|work|contact|top)$/.test(buttonURL))validUrl_(buttonURL,false);}
+ else if(buttonText)throw Error('Isi URL tombol atau kosongkan label.');
+ const status=['active','draft'].includes(b.status)?b.status:'draft';
+ const order=Number(b.sort_order);
+ if(!Number.isInteger(order)||order<0||order>999)throw Error('Urutan harus angka 0–999.');
+ const now=new Date().toISOString(),sh=sheet_('content_blocks',CONTENT_HEADERS),rows=contentRows_();
+ const id=b.id?text_(b.id,8,100,'ID konten'):Utilities.getUuid();
+ let old=null,idx=-1;
+ if(b.id){idx=rows.findIndex(r=>String(r[0])===id);if(idx<0)throw Error('Blok konten tidak ditemukan.');old=rows[idx];
+  if(String(old[7])==='archived')throw Error('Pulihkan blok konten terlebih dahulu.');
+  if(b.expectedUpdatedAt!==String(old[9]))throw Error('Konten berubah, muat ulang.');}
+ if(!old&&rows.length>=500)throw Error('Maksimum 500 blok konten.');
+ const row=[id,literal_(title),literal_(body),literal_(image),literal_(buttonText),literal_(buttonURL),order,status,old?old[8]:now,now];
+ const oldIndex=b.id?rows_('content_blocks',CONTENT_HEADERS).findIndex(r=>String(r[0])===id):-1;
+ sh.getRange(oldIndex<0?sh.getLastRow()+1:oldIndex+2,1,1,10).setValues([row]);SpreadsheetApp.flush();
+ return {ok:true,item:contentObject_(row)};
+}
+function contentArchive_(b){
+ session_(b.token);
+ const id=text_(b.id,8,100,'ID konten'),all=rows_('content_blocks',CONTENT_HEADERS),idx=all.findIndex(r=>String(r[0])===id);
+ if(idx<0||all[idx][7]==='archived')throw Error('Konten tidak ditemukan atau sudah diarsipkan.');
+ if(b.expectedUpdatedAt!==String(all[idx][9]))throw Error('Konten berubah, muat ulang.');
+ sheet_('content_blocks',CONTENT_HEADERS).getRange(idx+2,8,1,3).setValues([['archived',all[idx][8],new Date().toISOString()]]);
+ SpreadsheetApp.flush();return {ok:true,id};
+}
+function contentRestore_(b){
+ session_(b.token);
+ const id=text_(b.id,8,100,'ID konten'),all=rows_('content_blocks',CONTENT_HEADERS),idx=all.findIndex(r=>String(r[0])===id);
+ if(idx<0||all[idx][7]!=='archived')throw Error('Arsip konten tidak ditemukan.');
+ if(b.expectedUpdatedAt!==String(all[idx][9]))throw Error('Konten berubah, muat ulang.');
+ sheet_('content_blocks',CONTENT_HEADERS).getRange(idx+2,8,1,3).setValues([['draft',all[idx][8],new Date().toISOString()]]);
+ SpreadsheetApp.flush();return {ok:true,id,status:'draft'};
+}
+
 /* CMS MEDIA LIBRARY V4.
    GitHub is the canonical public image host. Store the fine-grained GitHub PAT
    only in GAS Script Properties under MEDIA_GITHUB_TOKEN.
@@ -323,6 +384,7 @@ function mediaUsedBy_(url){
  if(archived.some(r=>String(r[5])===url))usage.push('arsip proyek');
  const state=siteState_();
  if(Object.values(state.content).includes(url))usage.push('konten website');
+ if(contentRows_().some(r=>String(r[3])===url&&r[7]!=='archived'))usage.push('blok konten');
  return usage;
 }
 function mediaArchive_(b){
