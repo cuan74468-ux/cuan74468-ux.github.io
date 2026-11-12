@@ -63,23 +63,23 @@
        gasURL=String(config.gasUrl).trim();
        try{
          await sync();
-         $('#leadStatus').textContent='Form tersambung ke backend. Pesan akan disimpan setelah pengiriman berhasil.';
+         $('#leadStatus').textContent='Silakan isi formulir di atas. Anda juga dapat menghubungi saya lewat WhatsApp.';
        }catch(err){
          backendError=String(err.message||'GAS tidak merespons.');
-         $('#leadStatus').textContent='Form belum dapat diverifikasi. Gunakan WhatsApp sementara.';
+         $('#leadStatus').textContent='Formulir sedang tidak tersedia. Silakan hubungi saya lewat WhatsApp.';
        }
      }else{
        backendError='Alamat backend belum dikonfigurasi.';
      }
    }catch(err){backendError=String(err.message||'Konfigurasi belum tersedia.');}
-   if(!validEndpoint(gasURL))$('#leadStatus').textContent='Form online belum aktif. Gunakan tombol WhatsApp atau Email di atas.';
+   if(!validEndpoint(gasURL))$('#leadStatus').textContent='Formulir sedang tidak tersedia. Silakan gunakan WhatsApp atau Email di atas.';
    updateConnectionNotice();
  })();
  const lead=$('#leadForm');let startedAt=Date.now(),requestId=crypto.randomUUID();
  lead.addEventListener('submit',async e=>{
   e.preventDefault();const button=lead.querySelector('button[type=submit]');button.disabled=true;$('#leadStatus').textContent='Mengirim pesan…';
   try{await loadPromise;const b=Object.fromEntries(new FormData(lead));b.consent=lead.elements.consent.checked;b.startedAt=startedAt;b.requestId=requestId;const result=await request('lead',b);if(!result.id)throw Error('Penyimpanan belum terkonfirmasi.');$('#leadStatus').textContent=String(window.STUDIO.site?.values()['form.submitStatus']||'Pesan berhasil tersimpan. Terima kasih, Ferry akan menghubungi Anda.');lead.reset();requestId=crypto.randomUUID();startedAt=Date.now();}
-  catch(err){$('#leadStatus').textContent=err.message||'Belum dapat memastikan pesan tersimpan. Silakan coba lagi.';}finally{button.disabled=false;}
+  catch(err){$('#leadStatus').textContent='Pesan belum dapat dikonfirmasi terkirim. Silakan coba lagi atau hubungi saya melalui WhatsApp.';}finally{button.disabled=false;}
  });
  const admin=document.createElement('dialog');admin.className='admin-modal';admin.id='adminModal';admin.setAttribute('aria-labelledby','adminTitle');
  admin.innerHTML=`<header><h2 id="adminTitle">Linggau Studio CMS</h2><button class="admin-close" type="button" aria-label="Tutup admin">×</button></header>
