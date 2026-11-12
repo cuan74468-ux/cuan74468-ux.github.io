@@ -111,6 +111,7 @@ function checkSiteContent_(input){
   if(key==='character.mode'&&!['animated','static','hidden'].includes(value))throw Error('Mode karakter tidak dikenal.');
   if(key==='character.scale'&&(!/^\d{2,3}$/.test(value)||+value<60||+value>140))throw Error('Ukuran karakter 60–140%.');
   if(key==='character.offset'&&(!/^-?\d{1,2}$/.test(value)||+value< -40||+value>40))throw Error('Posisi karakter -40 hingga 40.');
+  if(/^contact\.tile[1-5]Icon$/.test(key)&&!/^#i-(claude|figma|perplexity|codex|notebooklm|openai|midjourney|gmail|linkedin)$/.test(value))throw Error('Pilihan ikon tidak dikenal.');
   if(key==='contact.email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))throw Error('Email tidak valid.');
   if(key==='contact.whatsapp'&&!/^\d{9,16}$/.test(value))throw Error('Nomor WhatsApp harus kode negara dan angka saja.');
   if(key.endsWith('.image')||key.endsWith('.thumbnail')||key==='hero.waveImage'||key==='seo.ogImage'){
