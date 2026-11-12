@@ -77,16 +77,17 @@ if (window.Matter && !reduce){
       bodies.forEach(b => Matter.Sleeping.set(b, false));
     };
     // first drop lands in a set arrangement: a ground row spread edge to edge, three pills resting on top, one leaning at the end
-    const GROUND = ['AI Product Photography','Google Sheets + GAS','Vibe Coding Workflow','WhatsApp Automation','Zero-Cost WebApp','Ready-to-Clone Templates','Ebook & 1-Page LMS'];
-    const TOP = {'AI Video Ads':['AI Product Photography',.25], 'POS Kasir UMKM':['Google Sheets + GAS',1], 'Thermal Printer Setup':['Zero-Cost WebApp',.95]};
-    const name = c => c.textContent.trim(), byName = {}; chips.forEach((c, i) => byName[name(c)] = i);
-    const gi = GROUND.slice(0, -1).map(n => byName[n]).filter(i => i !== undefined), tot = gi.reduce((t, i) => t + sizes[i][0], 0);
-    const gap = Math.max(2, Math.min(40, (W - 6 - tot - sizes[byName['Ebook & 1-Page LMS']][0] * .62) / Math.max(1, gi.length)));
+    // Positions use stable indices, never editable labels, so CMS changes cannot break physics.
+    const GROUND = [0,4,5,8,2,9,6];
+    const TOP = {1:[0,.25],3:[4,1],7:[2,.95]};
+    const gi = GROUND.slice(0,-1).filter(i=>i<chips.length), tot = gi.reduce((t,i)=>t+sizes[i][0],0);
+    const finalChip=sizes[6]?.[0]||0;
+    const gap = Math.max(2, Math.min(40, (W - 6 - tot - finalChip * .62) / Math.max(1, gi.length)));
     const PX = {}; let cx = 2; gi.forEach(i => { PX[i] = cx + sizes[i][0] / 2; cx += sizes[i][0] + gap; });
     const bodies = chips.map((c, i) => {
-      const [w, h] = sizes[i], nm = name(c), top = TOP[nm], tilt = nm === 'Ebook & 1-Page LMS' ? .3 : 0;
+      const [w, h] = sizes[i], top = TOP[i], tilt = i === 6 ? .3 : 0;
       let x = PX[i], row = 0;
-      if (top && byName[top[0]] !== undefined){ const g = byName[top[0]]; x = PX[g] - sizes[g][0] / 2 + sizes[g][0] * top[1]; row = 1; }
+      if (top && top[0]<chips.length){ const g=top[0]; x=PX[g]-sizes[g][0]/2+sizes[g][0]*top[1]; row=1; }
       if (x === undefined){ x = Math.random() * W; row = 1; }
       if (tilt) x = W - w / 2 - 2;
       x = Math.min(W - w/2 - 2, Math.max(w/2 + 2, x));
