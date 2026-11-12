@@ -39,7 +39,7 @@
   }catch(err){if(err.name==='AbortError')throw Error('Respons terlalu lama. Data mungkin sudah tersimpan; coba lagi dengan pesan yang sama.');if(err instanceof SyntaxError)throw Error('Respons bukan JSON. Pastikan deployment Web app dapat diakses oleh Anyone.');throw err;}
   finally{clearTimeout(timer);}
  }
- async function sync(){const data=await request('projects');backendReachable=true;backendError='';revision=data.revision;window.STUDIO.updateProjects(data.projects);siteSupported=typeof data.siteRevision==='string'&&data.content&&typeof data.content==='object';if(siteSupported){siteRevision=data.siteRevision;window.STUDIO.site?.publish(data.content);}updateConnectionNotice();document.dispatchEvent(new CustomEvent('studio:cms-site-sync',{detail:{supported:siteSupported}}));return data;}
+ async function sync(){const data=await request('projects');backendReachable=true;backendError='';revision=data.revision;window.STUDIO.updateProjects(data.projects);if(Array.isArray(data.blocks))window.STUDIO.renderBlocks?.(data.blocks);siteSupported=typeof data.siteRevision==='string'&&data.content&&typeof data.content==='object';if(siteSupported){siteRevision=data.siteRevision;window.STUDIO.site?.publish(data.content);}updateConnectionNotice();document.dispatchEvent(new CustomEvent('studio:cms-site-sync',{detail:{supported:siteSupported}}));return data;}
  function updateConnectionNotice(){
    const label=document.querySelector('#backendConnectionStatus');
    if(!label)return;
