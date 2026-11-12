@@ -61,4 +61,8 @@ assert(manifest.oauthScopes.includes('https://www.googleapis.com/auth/spreadshee
 assert(manifest.oauthScopes.includes('https://www.googleapis.com/auth/script.external_request'),'GAS needs external request scope for GitHub asset uploads');
 assert(adminJS.includes("request('health')"),'Admin status should verify deployed backend health endpoint');
 
+assert(adminHtml.includes('id="diagnoseModules"')&&adminHtml.includes('id="diagnosticResults"'),'Read-only diagnostics controls should exist');
+assert(adminJS.includes("async function diagnoseModules()"),'Module diagnostics should be implemented');
+assert(adminJS.includes("'workspaceLeads'")&&adminJS.includes("'mediaList'")&&adminJS.includes("'contentList'"),'Diagnostics must check advanced backend modules');
+
 console.log('PASS: standalone workspace navigation, authenticated client operations, shared schema, and legacy fallback');
