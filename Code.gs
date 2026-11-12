@@ -55,9 +55,21 @@ function setupDatabase(){
   SpreadsheetApp.flush();return {ok:true,projects:projects_().length,spreadsheet:db.getUrl()};
  }finally{lock.releaseLock();}
 }
-function health_(){let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5&&!!database_().getSheetByName('site_content');}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:2,ready:ready});}
+/** Owner-only recovery. Set Script Property ADMIN_RESET_PASSWORD locally, then run this function in Apps Script editor. */
+function resetAdminPassword(){
+ const lock=LockService.getScriptLock();lock.waitLock(20000);
+ try{
+  const props=PropertiesService.getScriptProperties(),password=props.getProperty('ADMIN_RESET_PASSWORD');
+  if(!password||password.length<12||password.length>200)throw Error('Isi Script Property ADMIN_RESET_PASSWORD dengan password baru minimal 12 karakter.');
+  if(!props.getProperty('ADMIN_PEPPER'))throw Error('Jalankan setupDatabase() terlebih dahulu.');
+  const adm=sheet_('admin',ADMIN_HEADERS);
+  const email='peyaje531@gmail.com';
+  const index=rows_('admin',ADMIN_HEADERS).findIndex(row=>String(row[0]).toLowerCase().trim()===email);
+  if(index<0)throw Error('Akun admin tidak ditemukan. Tidak ada data yang diubah.');
+  const salt=Utilities.getUuid();
+  adm.getRange(index+2,2).setValue('hmac-sha256let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5&&!!database_().getSheetByName('site_content');}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:2,ready:ready});}
 function doGet(e){try{const action=(e&&e.parameter&&e.parameter.action)||'projects';if(action==='projects')return json_(publicData_());if(action==='health')return health_();return json_({ok:false,error:'Aksi tidak tersedia.'});}catch(err){return json_({ok:false,error:'Database belum siap. Jalankan setupDatabase.'});}}
-function session_(token){if(typeof token!=='string'||token.length>200)throw Error('Sesi berakhir. Login kembali.');const s=CacheService.getScriptCache().get('session:'+digest_(token));if(!s)throw Error('Sesi berakhir. Login kembali.');return JSON.parse(s);}
+function session_(token){if(typeof token!=='string'||token.length>200)throw Error('Sesi berakhir. Login kembali.');const s=CacheService.getScriptCache().get('session:'+digest_(token));if(!s)throw Error('Sesi berakhir. Login kembali.');const user=JSON.parse(s),version=PropertiesService.getScriptProperties().getProperty('ADMIN_SESSION_VERSION')||'';if(user.version!==version)throw Error('Sesi berakhir. Login kembali.');return user;}
 function login_(b){
  const props=PropertiesService.getScriptProperties(),now=Date.now();
  let state=JSON.parse(props.getProperty('LOGIN_RATE')||'{"since":0,"count":0}');if(now-state.since>900000)state={since:now,count:0};
@@ -67,7 +79,235 @@ function login_(b){
  const row=rows_('admin',ADMIN_HEADERS).find(r=>String(r[0]).toLowerCase()===email);const a=String(row?row[1]:'').split('$');
  if(a[0]!=='hmac-sha256'||!equal_(sign_(digest_((a[1]||'invalid')+'\0'+pass)),a[2]||''))throw Error('Email atau password salah.');
  props.deleteProperty('LOGIN_RATE');const token=Utilities.getUuid()+Utilities.getUuid();
- CacheService.getScriptCache().put('session:'+digest_(token),JSON.stringify({email:email}),7200);
+ CacheService.getScriptCache().put('session:'+digest_(token),JSON.stringify({email:email,version:props.getProperty('ADMIN_SESSION_VERSION')||''}),7200);
+ return {ok:true,token:token,name:String(row[2]),expiresIn:7200};
+}
+function saveProject_(b){
+ session_(b.token);const current=publicData_();if(b.expectedRevision!==current.revision)throw Error('Data telah berubah. Muat ulang daftar proyek sebelum menyimpan.');
+ const p=b.project||{};const id=text_(p.id,1,60,'ID');if(!/^[a-z0-9][a-z0-9-]*$/.test(id))throw Error('ID hanya huruf kecil, angka, dan tanda hubung.');
+ const clean={id:id,nama:text_(p.nama,2,120,'Nama'),kategori:text_(p.kategori,2,80,'Kategori'),peek_text:text_(p.peek_text,3,250,'Ringkasan'),deskripsi:text_(p.deskripsi,10,6000,'Deskripsi'),thumbnail:validUrl_(text_(p.thumbnail,1,1500,'Gambar'),true),link:validUrl_(text_(p.link,1,1500,'Link'),false),featured_ring:p.featured_ring===true};
+ if(clean.featured_ring&&current.projects.filter(x=>x.id!==id&&x.featured_ring).length>=5)throw Error('Maksimal lima proyek utama. Nonaktifkan salah satunya terlebih dahulu.');
+ const index=current.projects.findIndex(x=>x.id===id);if(index<0&&current.projects.length>=500)throw Error('Batas 500 proyek tercapai.');
+ const sh=sheet_('projects',PROJECT_HEADERS),row=PROJECT_HEADERS.map(k=>k==='featured_ring'?clean[k]:literal_(clean[k]));
+ // Resolve actual row, including blank rows, instead of relying on a filtered index.
+ const actual=rows_('projects',PROJECT_HEADERS).findIndex(r=>String(r[0])===id);
+ sh.getRange(actual<0?sh.getLastRow()+1:actual+2,1,1,8).setValues([row]);SpreadsheetApp.flush();return publicData_();
+}
+function lead_(b){
+ if(b.website)throw Error('Permintaan tidak valid.');if(b.consent!==true)throw Error('Persetujuan penyimpanan diperlukan.');
+ const id=text_(b.requestId,20,80,'ID pesan');if(!/^[a-zA-Z0-9-]+$/.test(id))throw Error('ID pesan tidak valid.');
+ const sh=sheet_('leads',LEAD_HEADERS);if(sh.getLastRow()>1&&sh.getRange(2,1,sh.getLastRow()-1,1).createTextFinder(id).matchEntireCell(true).findNext())return {ok:true,id:id,duplicate:true};
+ const nama=text_(b.nama,2,100,'Nama'),wa=text_(b.whatsapp,8,25,'WhatsApp'),need=text_(b.kebutuhan,2,100,'Kebutuhan'),pesan=text_(b.pesan,10,3000,'Pesan');if(!/^[+0-9 ()-]+$/.test(wa))throw Error('Nomor WhatsApp tidak valid.');
+ const now=Date.now();if(!Number.isFinite(b.startedAt)||now-b.startedAt<2000||now-b.startedAt>86400000)throw Error('Muat ulang halaman, kemudian kirim pesan kembali.');
+ const cache=CacheService.getScriptCache(),phoneKey='lead:'+digest_(wa.replace(/\D/g,''));if(cache.get(phoneKey))throw Error('Mohon tunggu satu menit sebelum mengirim pesan berikutnya.');
+ const props=PropertiesService.getScriptProperties(),day=Utilities.formatDate(new Date(),'Asia/Jakarta','yyyy-MM-dd');let quota=JSON.parse(props.getProperty('LEAD_QUOTA')||'{}');if(quota.day!==day)quota={day:day,count:0};if(quota.count>=100)throw Error('Form sedang penuh. Hubungi melalui WhatsApp.');
+ sh.appendRow([id,literal_(nama),literal_(wa),literal_(need),literal_(pesan),new Date().toISOString()]);quota.count++;props.setProperty('LEAD_QUOTA',JSON.stringify(quota));cache.put(phoneKey,'1',60);SpreadsheetApp.flush();return {ok:true,id:id};
+}
+
+/** CMS v2: public content is plain text; HTML, scripts and executable templates are not accepted. */
+function checkSiteContent_(input){
+ if(!input||Array.isArray(input)||typeof input!=='object')throw Error('Konten tidak valid.');
+ const allowed=/^(seo|nav|hero|about|process|skills|contact|form|footer|case|character|theme)\.[a-zA-Z0-9_.-]{1,70}$/;
+ const entries=Object.entries(input);
+ if(entries.length>180)throw Error('Jumlah field melebihi batas.');
+ const result={};let total=0;
+ for(const [key,raw] of entries){
+  if(!allowed.test(key)||typeof raw!=='string')throw Error('Field konten tidak dikenal.');
+  const value=raw.trim(),max=key.includes('paragraph')||key.includes('.bio')||key.includes('.desc')||key.includes('.body')?6000:1500;
+  if(value.length>max)throw Error('Teks terlalu panjang: '+key);
+  if(key.startsWith('theme.')&&!['theme.bodyFont','theme.headingFont'].includes(key)&&!/^#[0-9a-fA-F]{6}$/.test(value))throw Error('Format warna harus #RRGGBB.');
+  if(['theme.bodyFont','theme.headingFont'].includes(key)&&!['Geist','Plus Jakarta Sans','Instrument Serif'].includes(value))throw Error('Pilihan font tidak didukung.');
+  if(key==='character.mode'&&!['animated','static','hidden'].includes(value))throw Error('Mode karakter tidak dikenal.');
+  if(key==='character.scale'&&(!/^\d{2,3}$/.test(value)||+value<60||+value>140))throw Error('Ukuran karakter 60–140%.');
+  if(key==='character.offset'&&(!/^-?\d{1,2}$/.test(value)||+value< -40||+value>40))throw Error('Posisi karakter -40 hingga 40.');
+  if(key==='contact.email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))throw Error('Email tidak valid.');
+  if(key==='contact.whatsapp'&&!/^\d{9,16}$/.test(value))throw Error('Nomor WhatsApp harus kode negara dan angka saja.');
+  if(key.endsWith('.image')||key.endsWith('.thumbnail')||key==='hero.waveImage'){
+   if(!value||!(validUrl_(value,true)))throw Error('URL gambar tidak valid.');
+   if(key==='character.image'&&!/^(?:\.\/)?assets\/[a-zA-Z0-9._/-]+$/.test(value)&&!/^https:\/\//.test(value))throw Error('Gambar karakter tidak valid.');
+  }
+  if(key.endsWith('.url')||key.endsWith('.link')){if(!value||!(validUrl_(value,false)))throw Error('URL tautan tidak valid.');}
+  total+=key.length+value.length;if(total>38000)throw Error('Ukuran konten terlalu besar.');
+  result[key]=value;
+ }
+ return result;
+}
+function writeSite_(content,editor){
+ const sh=sheet_('site_content',['key','value','updated_at']);
+ const prior=siteState_(),history=sheet_('site_history',['id','tanggal','admin','snapshot_json']);
+ const snapshot=JSON.stringify(prior.content);
+ if(snapshot.length>49000)throw Error('Riwayat konten terlalu besar untuk satu sel.');
+ const timestamp=new Date().toISOString();
+ history.appendRow([Utilities.getUuid(),timestamp,literal_(editor),literal_(snapshot)]);
+ const rows=Object.entries(content).sort((a,b)=>a[0].localeCompare(b[0])).map(([key,value])=>[literal_(key),literal_(value),timestamp]);
+ const oldCount=Math.max(0,sh.getLastRow()-1);
+ if(rows.length>0)sh.getRange(2,1,rows.length,3).setValues(rows);
+ if(oldCount>rows.length)sh.getRange(rows.length+2,1,oldCount-rows.length,3).clearContent();
+ SpreadsheetApp.flush();
+ return publicData_();
+}
+function saveSite_(b){
+ const editor=session_(b.token);
+ const current=siteState_();
+ if(typeof b.expectedSiteRevision!=='string'||b.expectedSiteRevision!==current.siteRevision)throw Error('Konten telah berubah di perangkat lain. Muat ulang dahulu.');
+ return writeSite_(checkSiteContent_(b.content),editor.email);
+}
+function revertSite_(b){
+ const editor=session_(b.token),cur=siteState_();
+ if(b.expectedSiteRevision!==cur.siteRevision)throw Error('Konten telah berubah. Muat ulang dahulu.');
+ const history=sheet_('site_history',['id','tanggal','admin','snapshot_json']);
+ if(history.getLastRow()<2)throw Error('Belum ada versi sebelumnya.');
+ const last=history.getRange(history.getLastRow(),1,1,4).getValues()[0];
+ const restored=checkSiteContent_(JSON.parse(String(last[3])));
+ history.deleteRow(history.getLastRow());
+ // Store the current version as the new rollback target.
+ return writeSite_(restored,editor.email);
+}
+
+function doPost(e){
+ let lock;
+ try{
+  if(!e||!e.postData||e.postData.contents.length>100000)throw Error('Permintaan tidak valid.');const b=JSON.parse(e.postData.contents);
+  lock=LockService.getScriptLock();lock.waitLock(15000);let result;
+  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
+  return json_(result);
+ }catch(err){return json_({ok:false,error:String(err.message||'Permintaan gagal.').slice(0,200)});}finally{if(lock)lock.releaseLock();}
+}
+/** Run in the editor after deployment. Copy the printed JSON into the repository's config.json. */
+function getFrontendConfig(){const url=ScriptApp.getService().getUrl();if(!url)throw Error('Deploy sebagai Web app terlebih dahulu.');console.log(JSON.stringify({gasUrl:url,spreadsheetUrl:database_().getUrl()},null,2));}
+
+const DEFAULT_PROJECTS = [{"id": "umkm-pos", "nama": "UMKM Juara POS (Kasir Sederhana)", "kategori": "WebApp UMKM", "peek_text": "Aplikasi Kasir Ringan • Supabase & Cetak Struk Thermal Bluetooth", "deskripsi": "Aplikasi Point of Sale yang telah dibersihkan total dari over-engineering desktop menjadi POS sederhana yang super ringan, stabil di HP/Tablet Android, dan terhubung langsung ke printer thermal Bluetooth (Smartcom RPP02N via RawBT).", "thumbnail": "assets/proyek-pos-sederhana.jpg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20saya%20ingin%20coba%20demo%20UMKM%20Juara%20POS", "featured_ring": true}, {"id": "ai-photo", "nama": "AI Commercial Product Photography", "kategori": "AI Creative", "peek_text": "Visual Produk F&B & Kemasan UMKM Sekelas Studio Profesional", "deskripsi": "Mengubah foto produk UMKM sederhana dari kamera HP menjadi visual iklan komersial dramatis (seperti efek splash madu sinematik dan roti keju hangat) siap tayang untuk katalog digital dan media sosial.", "thumbnail": "assets/ai-photography-cover.svg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20saya%20tertarik%20layanan%20Foto%20Produk%20AI", "featured_ring": true}, {"id": "kurir-juara", "nama": "Kurir Juara & Katalog Merchant", "kategori": "Logistik Lokal", "peek_text": "Platform Pengiriman Lokal, Katalog Kuliner, & Jastip Terintegrasi WA", "deskripsi": "Ekosistem katalog digital merchant lokal dan layanan pengantaran/jastip daerah yang memudahkan warga memesan produk UMKM langsung terhubung ke WhatsApp kurir dan toko.", "thumbnail": "assets/kurir-juara.jpg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20mau%20tanya%20sistem%20Kurir%20Juara%20%26%20Katalog", "featured_ring": true}, {"id": "ebook-lms", "nama": "Ebook Vibe Coder & 1-Page LMS", "kategori": "Edukasi Digital", "peek_text": "Panduan Praktis Merakit WebApp Modern Tanpa Latar Belakang IT", "deskripsi": "Kurikulum belajar mandiri, Ebook Vibe Coder Otodidak, dan modul Komunitas Ngulik Digital untuk membantu pemilik usaha menguasai kolaborasi Multi-AI dan arsitektur aplikasi gratis.", "thumbnail": "assets/ebook-lms.jpg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20saya%20mau%20akses%20Ebook%20Vibe%20Coder%20%26%20LMS", "featured_ring": true}, {"id": "zero-cost-stack", "nama": "40+ Demo WebApp & Template GAS", "kategori": "Template WebApp", "peek_text": "Katalog Aplikasi Kasir, Absensi WA Fonnte, & Template Siap Duplikasi", "deskripsi": "Koleksi 40+ aplikasi web siap pakai dan 4 Blueprint Skill AI (GitHub Pages + GAS, Full GAS PWA, Supabase, Firebase) yang membebaskan UMKM dari tagihan server bulanan.", "thumbnail": "assets/proyek-smartlink.jpg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20saya%20ingin%20lihat%2040%2B%20Demo%20WebApp%20%26%20Template", "featured_ring": true}];
++salt+'let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5&&!!database_().getSheetByName('site_content');}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:2,ready:ready});}
+function doGet(e){try{const action=(e&&e.parameter&&e.parameter.action)||'projects';if(action==='projects')return json_(publicData_());if(action==='health')return health_();return json_({ok:false,error:'Aksi tidak tersedia.'});}catch(err){return json_({ok:false,error:'Database belum siap. Jalankan setupDatabase.'});}}
+function session_(token){if(typeof token!=='string'||token.length>200)throw Error('Sesi berakhir. Login kembali.');const s=CacheService.getScriptCache().get('session:'+digest_(token));if(!s)throw Error('Sesi berakhir. Login kembali.');const user=JSON.parse(s),version=PropertiesService.getScriptProperties().getProperty('ADMIN_SESSION_VERSION')||'';if(user.version!==version)throw Error('Sesi berakhir. Login kembali.');return user;}
+function login_(b){
+ const props=PropertiesService.getScriptProperties(),now=Date.now();
+ let state=JSON.parse(props.getProperty('LOGIN_RATE')||'{"since":0,"count":0}');if(now-state.since>900000)state={since:now,count:0};
+ if(state.count>=10)throw Error('Terlalu banyak percobaan. Coba lagi dalam 15 menit.');state.count++;props.setProperty('LOGIN_RATE',JSON.stringify(state));
+ const email=typeof b.email==='string'?b.email.toLowerCase().trim():'';const pass=typeof b.password==='string'?b.password:'';
+ if(pass.length>200)throw Error('Email atau password salah.');
+ const row=rows_('admin',ADMIN_HEADERS).find(r=>String(r[0]).toLowerCase()===email);const a=String(row?row[1]:'').split('$');
+ if(a[0]!=='hmac-sha256'||!equal_(sign_(digest_((a[1]||'invalid')+'\0'+pass)),a[2]||''))throw Error('Email atau password salah.');
+ props.deleteProperty('LOGIN_RATE');const token=Utilities.getUuid()+Utilities.getUuid();
+ CacheService.getScriptCache().put('session:'+digest_(token),JSON.stringify({email:email,version:props.getProperty('ADMIN_SESSION_VERSION')||''}),7200);
+ return {ok:true,token:token,name:String(row[2]),expiresIn:7200};
+}
+function saveProject_(b){
+ session_(b.token);const current=publicData_();if(b.expectedRevision!==current.revision)throw Error('Data telah berubah. Muat ulang daftar proyek sebelum menyimpan.');
+ const p=b.project||{};const id=text_(p.id,1,60,'ID');if(!/^[a-z0-9][a-z0-9-]*$/.test(id))throw Error('ID hanya huruf kecil, angka, dan tanda hubung.');
+ const clean={id:id,nama:text_(p.nama,2,120,'Nama'),kategori:text_(p.kategori,2,80,'Kategori'),peek_text:text_(p.peek_text,3,250,'Ringkasan'),deskripsi:text_(p.deskripsi,10,6000,'Deskripsi'),thumbnail:validUrl_(text_(p.thumbnail,1,1500,'Gambar'),true),link:validUrl_(text_(p.link,1,1500,'Link'),false),featured_ring:p.featured_ring===true};
+ if(clean.featured_ring&&current.projects.filter(x=>x.id!==id&&x.featured_ring).length>=5)throw Error('Maksimal lima proyek utama. Nonaktifkan salah satunya terlebih dahulu.');
+ const index=current.projects.findIndex(x=>x.id===id);if(index<0&&current.projects.length>=500)throw Error('Batas 500 proyek tercapai.');
+ const sh=sheet_('projects',PROJECT_HEADERS),row=PROJECT_HEADERS.map(k=>k==='featured_ring'?clean[k]:literal_(clean[k]));
+ // Resolve actual row, including blank rows, instead of relying on a filtered index.
+ const actual=rows_('projects',PROJECT_HEADERS).findIndex(r=>String(r[0])===id);
+ sh.getRange(actual<0?sh.getLastRow()+1:actual+2,1,1,8).setValues([row]);SpreadsheetApp.flush();return publicData_();
+}
+function lead_(b){
+ if(b.website)throw Error('Permintaan tidak valid.');if(b.consent!==true)throw Error('Persetujuan penyimpanan diperlukan.');
+ const id=text_(b.requestId,20,80,'ID pesan');if(!/^[a-zA-Z0-9-]+$/.test(id))throw Error('ID pesan tidak valid.');
+ const sh=sheet_('leads',LEAD_HEADERS);if(sh.getLastRow()>1&&sh.getRange(2,1,sh.getLastRow()-1,1).createTextFinder(id).matchEntireCell(true).findNext())return {ok:true,id:id,duplicate:true};
+ const nama=text_(b.nama,2,100,'Nama'),wa=text_(b.whatsapp,8,25,'WhatsApp'),need=text_(b.kebutuhan,2,100,'Kebutuhan'),pesan=text_(b.pesan,10,3000,'Pesan');if(!/^[+0-9 ()-]+$/.test(wa))throw Error('Nomor WhatsApp tidak valid.');
+ const now=Date.now();if(!Number.isFinite(b.startedAt)||now-b.startedAt<2000||now-b.startedAt>86400000)throw Error('Muat ulang halaman, kemudian kirim pesan kembali.');
+ const cache=CacheService.getScriptCache(),phoneKey='lead:'+digest_(wa.replace(/\D/g,''));if(cache.get(phoneKey))throw Error('Mohon tunggu satu menit sebelum mengirim pesan berikutnya.');
+ const props=PropertiesService.getScriptProperties(),day=Utilities.formatDate(new Date(),'Asia/Jakarta','yyyy-MM-dd');let quota=JSON.parse(props.getProperty('LEAD_QUOTA')||'{}');if(quota.day!==day)quota={day:day,count:0};if(quota.count>=100)throw Error('Form sedang penuh. Hubungi melalui WhatsApp.');
+ sh.appendRow([id,literal_(nama),literal_(wa),literal_(need),literal_(pesan),new Date().toISOString()]);quota.count++;props.setProperty('LEAD_QUOTA',JSON.stringify(quota));cache.put(phoneKey,'1',60);SpreadsheetApp.flush();return {ok:true,id:id};
+}
+
+/** CMS v2: public content is plain text; HTML, scripts and executable templates are not accepted. */
+function checkSiteContent_(input){
+ if(!input||Array.isArray(input)||typeof input!=='object')throw Error('Konten tidak valid.');
+ const allowed=/^(seo|nav|hero|about|process|skills|contact|form|footer|case|character|theme)\.[a-zA-Z0-9_.-]{1,70}$/;
+ const entries=Object.entries(input);
+ if(entries.length>180)throw Error('Jumlah field melebihi batas.');
+ const result={};let total=0;
+ for(const [key,raw] of entries){
+  if(!allowed.test(key)||typeof raw!=='string')throw Error('Field konten tidak dikenal.');
+  const value=raw.trim(),max=key.includes('paragraph')||key.includes('.bio')||key.includes('.desc')||key.includes('.body')?6000:1500;
+  if(value.length>max)throw Error('Teks terlalu panjang: '+key);
+  if(key.startsWith('theme.')&&!['theme.bodyFont','theme.headingFont'].includes(key)&&!/^#[0-9a-fA-F]{6}$/.test(value))throw Error('Format warna harus #RRGGBB.');
+  if(['theme.bodyFont','theme.headingFont'].includes(key)&&!['Geist','Plus Jakarta Sans','Instrument Serif'].includes(value))throw Error('Pilihan font tidak didukung.');
+  if(key==='character.mode'&&!['animated','static','hidden'].includes(value))throw Error('Mode karakter tidak dikenal.');
+  if(key==='character.scale'&&(!/^\d{2,3}$/.test(value)||+value<60||+value>140))throw Error('Ukuran karakter 60–140%.');
+  if(key==='character.offset'&&(!/^-?\d{1,2}$/.test(value)||+value< -40||+value>40))throw Error('Posisi karakter -40 hingga 40.');
+  if(key==='contact.email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))throw Error('Email tidak valid.');
+  if(key==='contact.whatsapp'&&!/^\d{9,16}$/.test(value))throw Error('Nomor WhatsApp harus kode negara dan angka saja.');
+  if(key.endsWith('.image')||key.endsWith('.thumbnail')||key==='hero.waveImage'){
+   if(!value||!(validUrl_(value,true)))throw Error('URL gambar tidak valid.');
+   if(key==='character.image'&&!/^(?:\.\/)?assets\/[a-zA-Z0-9._/-]+$/.test(value)&&!/^https:\/\//.test(value))throw Error('Gambar karakter tidak valid.');
+  }
+  if(key.endsWith('.url')||key.endsWith('.link')){if(!value||!(validUrl_(value,false)))throw Error('URL tautan tidak valid.');}
+  total+=key.length+value.length;if(total>38000)throw Error('Ukuran konten terlalu besar.');
+  result[key]=value;
+ }
+ return result;
+}
+function writeSite_(content,editor){
+ const sh=sheet_('site_content',['key','value','updated_at']);
+ const prior=siteState_(),history=sheet_('site_history',['id','tanggal','admin','snapshot_json']);
+ const snapshot=JSON.stringify(prior.content);
+ if(snapshot.length>49000)throw Error('Riwayat konten terlalu besar untuk satu sel.');
+ const timestamp=new Date().toISOString();
+ history.appendRow([Utilities.getUuid(),timestamp,literal_(editor),literal_(snapshot)]);
+ const rows=Object.entries(content).sort((a,b)=>a[0].localeCompare(b[0])).map(([key,value])=>[literal_(key),literal_(value),timestamp]);
+ const oldCount=Math.max(0,sh.getLastRow()-1);
+ if(rows.length>0)sh.getRange(2,1,rows.length,3).setValues(rows);
+ if(oldCount>rows.length)sh.getRange(rows.length+2,1,oldCount-rows.length,3).clearContent();
+ SpreadsheetApp.flush();
+ return publicData_();
+}
+function saveSite_(b){
+ const editor=session_(b.token);
+ const current=siteState_();
+ if(typeof b.expectedSiteRevision!=='string'||b.expectedSiteRevision!==current.siteRevision)throw Error('Konten telah berubah di perangkat lain. Muat ulang dahulu.');
+ return writeSite_(checkSiteContent_(b.content),editor.email);
+}
+function revertSite_(b){
+ const editor=session_(b.token),cur=siteState_();
+ if(b.expectedSiteRevision!==cur.siteRevision)throw Error('Konten telah berubah. Muat ulang dahulu.');
+ const history=sheet_('site_history',['id','tanggal','admin','snapshot_json']);
+ if(history.getLastRow()<2)throw Error('Belum ada versi sebelumnya.');
+ const last=history.getRange(history.getLastRow(),1,1,4).getValues()[0];
+ const restored=checkSiteContent_(JSON.parse(String(last[3])));
+ history.deleteRow(history.getLastRow());
+ // Store the current version as the new rollback target.
+ return writeSite_(restored,editor.email);
+}
+
+function doPost(e){
+ let lock;
+ try{
+  if(!e||!e.postData||e.postData.contents.length>100000)throw Error('Permintaan tidak valid.');const b=JSON.parse(e.postData.contents);
+  lock=LockService.getScriptLock();lock.waitLock(15000);let result;
+  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
+  return json_(result);
+ }catch(err){return json_({ok:false,error:String(err.message||'Permintaan gagal.').slice(0,200)});}finally{if(lock)lock.releaseLock();}
+}
+/** Run in the editor after deployment. Copy the printed JSON into the repository's config.json. */
+function getFrontendConfig(){const url=ScriptApp.getService().getUrl();if(!url)throw Error('Deploy sebagai Web app terlebih dahulu.');console.log(JSON.stringify({gasUrl:url,spreadsheetUrl:database_().getUrl()},null,2));}
+
+const DEFAULT_PROJECTS = [{"id": "umkm-pos", "nama": "UMKM Juara POS (Kasir Sederhana)", "kategori": "WebApp UMKM", "peek_text": "Aplikasi Kasir Ringan • Supabase & Cetak Struk Thermal Bluetooth", "deskripsi": "Aplikasi Point of Sale yang telah dibersihkan total dari over-engineering desktop menjadi POS sederhana yang super ringan, stabil di HP/Tablet Android, dan terhubung langsung ke printer thermal Bluetooth (Smartcom RPP02N via RawBT).", "thumbnail": "assets/proyek-pos-sederhana.jpg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20saya%20ingin%20coba%20demo%20UMKM%20Juara%20POS", "featured_ring": true}, {"id": "ai-photo", "nama": "AI Commercial Product Photography", "kategori": "AI Creative", "peek_text": "Visual Produk F&B & Kemasan UMKM Sekelas Studio Profesional", "deskripsi": "Mengubah foto produk UMKM sederhana dari kamera HP menjadi visual iklan komersial dramatis (seperti efek splash madu sinematik dan roti keju hangat) siap tayang untuk katalog digital dan media sosial.", "thumbnail": "assets/ai-photography-cover.svg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20saya%20tertarik%20layanan%20Foto%20Produk%20AI", "featured_ring": true}, {"id": "kurir-juara", "nama": "Kurir Juara & Katalog Merchant", "kategori": "Logistik Lokal", "peek_text": "Platform Pengiriman Lokal, Katalog Kuliner, & Jastip Terintegrasi WA", "deskripsi": "Ekosistem katalog digital merchant lokal dan layanan pengantaran/jastip daerah yang memudahkan warga memesan produk UMKM langsung terhubung ke WhatsApp kurir dan toko.", "thumbnail": "assets/kurir-juara.jpg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20mau%20tanya%20sistem%20Kurir%20Juara%20%26%20Katalog", "featured_ring": true}, {"id": "ebook-lms", "nama": "Ebook Vibe Coder & 1-Page LMS", "kategori": "Edukasi Digital", "peek_text": "Panduan Praktis Merakit WebApp Modern Tanpa Latar Belakang IT", "deskripsi": "Kurikulum belajar mandiri, Ebook Vibe Coder Otodidak, dan modul Komunitas Ngulik Digital untuk membantu pemilik usaha menguasai kolaborasi Multi-AI dan arsitektur aplikasi gratis.", "thumbnail": "assets/ebook-lms.jpg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20saya%20mau%20akses%20Ebook%20Vibe%20Coder%20%26%20LMS", "featured_ring": true}, {"id": "zero-cost-stack", "nama": "40+ Demo WebApp & Template GAS", "kategori": "Template WebApp", "peek_text": "Katalog Aplikasi Kasir, Absensi WA Fonnte, & Template Siap Duplikasi", "deskripsi": "Koleksi 40+ aplikasi web siap pakai dan 4 Blueprint Skill AI (GitHub Pages + GAS, Full GAS PWA, Supabase, Firebase) yang membebaskan UMKM dari tagihan server bulanan.", "thumbnail": "assets/proyek-smartlink.jpg", "link": "https://wa.me/6289509016792?text=Halo%20Bang%20Ferry,%20saya%20ingin%20lihat%2040%2B%20Demo%20WebApp%20%26%20Template", "featured_ring": true}];
++sign_(digest_(salt+'\\0'+password)));
+  SpreadsheetApp.flush();
+  props.setProperty('ADMIN_SESSION_VERSION',Utilities.getUuid());
+  props.deleteProperty('LOGIN_RATE');
+  props.deleteProperty('ADMIN_RESET_PASSWORD');
+  return {ok:true,admin:email,message:'Password admin direset, sesi lama dibatalkan. Silakan login dengan password baru.'};
+ }finally{lock.releaseLock();}
+}
+function health_(){let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5&&!!database_().getSheetByName('site_content');}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:2,ready:ready});}
+function doGet(e){try{const action=(e&&e.parameter&&e.parameter.action)||'projects';if(action==='projects')return json_(publicData_());if(action==='health')return health_();return json_({ok:false,error:'Aksi tidak tersedia.'});}catch(err){return json_({ok:false,error:'Database belum siap. Jalankan setupDatabase.'});}}
+function session_(token){if(typeof token!=='string'||token.length>200)throw Error('Sesi berakhir. Login kembali.');const s=CacheService.getScriptCache().get('session:'+digest_(token));if(!s)throw Error('Sesi berakhir. Login kembali.');const user=JSON.parse(s),version=PropertiesService.getScriptProperties().getProperty('ADMIN_SESSION_VERSION')||'';if(user.version!==version)throw Error('Sesi berakhir. Login kembali.');return user;}
+function login_(b){
+ const props=PropertiesService.getScriptProperties(),now=Date.now();
+ let state=JSON.parse(props.getProperty('LOGIN_RATE')||'{"since":0,"count":0}');if(now-state.since>900000)state={since:now,count:0};
+ if(state.count>=10)throw Error('Terlalu banyak percobaan. Coba lagi dalam 15 menit.');state.count++;props.setProperty('LOGIN_RATE',JSON.stringify(state));
+ const email=typeof b.email==='string'?b.email.toLowerCase().trim():'';const pass=typeof b.password==='string'?b.password:'';
+ if(pass.length>200)throw Error('Email atau password salah.');
+ const row=rows_('admin',ADMIN_HEADERS).find(r=>String(r[0]).toLowerCase()===email);const a=String(row?row[1]:'').split('$');
+ if(a[0]!=='hmac-sha256'||!equal_(sign_(digest_((a[1]||'invalid')+'\0'+pass)),a[2]||''))throw Error('Email atau password salah.');
+ props.deleteProperty('LOGIN_RATE');const token=Utilities.getUuid()+Utilities.getUuid();
+ CacheService.getScriptCache().put('session:'+digest_(token),JSON.stringify({email:email,version:props.getProperty('ADMIN_SESSION_VERSION')||''}),7200);
  return {ok:true,token:token,name:String(row[2]),expiresIn:7200};
 }
 function saveProject_(b){
