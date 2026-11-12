@@ -420,6 +420,20 @@ function mediaGitHub_ (method,path,body,token){
  if(status<200||status>=300)throw Error(status===401||status===403?'GitHub menolak akses. Periksa MEDIA_GITHUB_TOKEN dan izin Contents: Read and write.':'Upload GitHub gagal (HTTP '+status+').');
  return data;
 }
+/**
+ * Owner-run, read-only setup check. Authorizes external HTTPS requests from GAS,
+ * validates configured GitHub token, and never prints the token itself.
+ * GitHub write permission is verified only by an actual permitted upload.
+ */
+function testMediaGitHubConnection(){
+ const token=PropertiesService.getScriptProperties().getProperty('MEDIA_GITHUB_TOKEN');
+ if(!token)throw Error('Isi Script Property MEDIA_GITHUB_TOKEN dahulu.');
+ const file=mediaGitHub_('get','README.md',null,token);
+ if(!file.sha)throw Error('Koneksi GitHub tidak valid. Periksa izin Contents: Read and write.');
+ console.log('GitHub API terhubung. File README terbaca. Izin menulis diuji ketika upload pertama.');
+ return {ok:true,readAccess:true,uploadConfigured:true};
+}
+
 function mediaUpload_(b){
  session_(b.token);
  const token=PropertiesService.getScriptProperties().getProperty('MEDIA_GITHUB_TOKEN');
