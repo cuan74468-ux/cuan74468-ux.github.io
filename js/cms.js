@@ -91,7 +91,7 @@
  <form id="projectForm" class="studio-form"><label>ID unik<input name="id" required pattern="[a-z0-9][a-z0-9-]{0,59}" maxlength="60"></label><label>Nama proyek<input name="nama" required maxlength="120"></label><label>Kategori<input name="kategori" required maxlength="80"></label><label>Ringkasan tooltip<input name="peek_text" required maxlength="250"></label><label>Deskripsi<textarea name="deskripsi" rows="5" required minlength="10" maxlength="6000"></textarea></label><label>URL gambar HTTPS atau assets/nama-file<input name="thumbnail" required maxlength="1500"></label><label>Link demo / WhatsApp<input name="link" type="url" required maxlength="1500"></label><label class="consent"><input name="featured_ring" type="checkbox"> Tampilkan di cincin utama (maksimal 5)</label><button class="btn btn-dark" type="submit">Simpan proyek</button></form></div>`;
  document.body.append(admin);
  const msg=text=>$('#adminMessage').textContent=text;
- function openAdmin(){if(!admin.open)admin.showModal();$('#endpointForm').elements.endpoint.value=gasURL;updateConnectionNotice();if(!validEndpoint(gasURL))$('#endpointSetup').open=true;}
+ function openAdmin(){window.location.assign('studio-admin.html');}
  admin.querySelector('.admin-close').onclick=()=>admin.close();admin.addEventListener('close',()=>{if(location.hash==='#/linggau-core-session')history.replaceState(null,'',location.pathname+location.search);});
  let taps=[];$('#adminTrigger').addEventListener('click',()=>{const now=Date.now();taps=taps.filter(t=>now-t<900);taps.push(now);if(taps.length>=3){taps=[];openAdmin();}});
  const route=()=>{if(location.hash==='#/linggau-core-session')openAdmin();};addEventListener('hashchange',route);route();
