@@ -8,6 +8,8 @@ Portofolio statis: HTML, CSS, JavaScript biasa. Tidak membutuhkan npm, build, Ve
 - Database: https://docs.google.com/spreadsheets/d/1VOJV8zmSJXc3afnh6ly34_8Rguue5R2t4EXemjouYeM/edit
 - Lima proyek default, cincin 20 kartu, studi kasus dalam modal, katalog, 10 chip fisika, kontak WhatsApp/email, serta CMS tersedia dalam kode.
 - **Backend belum diterbitkan.** `config.json` memakai `gasUrl` kosong dengan sengaja; tidak ada endpoint palsu. Form menampilkan status belum aktif sampai Web app diterbitkan dan URL aslinya diisi.
+- **Kondisi admin sebelum setup:** kolom `admin.password` masih berformat `pending$…`, bukan verifier final. Fungsi `setupDatabase()` wajib dijalankan dari editor Apps Script agar nilai menjadi `hmac-sha256$…` dan rahasia HMAC disimpan di Script Properties. Endpoint `?action=health` sekarang mengembalikan `ready:false` sampai setup berhasil. Jangan publikasikan Sheet admin.
+- **QA otomatis tanpa build:** workflow `.github/workflows/backend-qa.yml` menjalankan `node tests/backend.test.cjs` saat file backend atau tes berubah. Node dipakai hanya untuk unit test, bukan untuk membangun situs GitHub Pages.
 - Password admin tidak ada dalam repo. Database privat memuat verifier dari password yang diberikan Ferry. `setupDatabase()` mengubahnya menjadi HMAC dengan pepper privat di Script Properties.
 - Uji lokal menggunakan mock GAS; pengujian end-to-end Google Apps Script harus dilakukan setelah deployment.
 
