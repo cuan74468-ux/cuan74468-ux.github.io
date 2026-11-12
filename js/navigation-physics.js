@@ -14,7 +14,7 @@ const io = new IntersectionObserver(entries => {
 const toast = $('#toast'); let tt;
 const say = m => { toast.textContent = m; toast.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => toast.classList.remove('show'), 2200); };
 $('#copyEmail').addEventListener('click', async () => {
-  const txt = 'peyaje531@gmail.com';
+  const txt = ($('#copyEmail code')?.textContent||'peyaje531@gmail.com').trim();
   try { await navigator.clipboard.writeText(txt); say('Email disalin'); }
   catch { const r = document.createRange(); r.selectNodeContents($('#copyEmail code')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); say('Email dipilih. Tekan Ctrl+C untuk menyalin'); }
 });
@@ -43,10 +43,10 @@ $('#backBtn').addEventListener('click',()=>{hideCase();if(fromPage){fromPage=fal
 caseEl.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#backBtn').click();return;}if(e.key==='Tab'){const f=[...caseEl.querySelectorAll('button,a[href],input')].filter(x=>!x.closest('[hidden]'));const first=f[0],last=f.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
 $('#catalogButton').addEventListener('click',()=>{
  const list=$('#catalogList');list.replaceChildren();list.hidden=false;
- const info=document.createElement('p');info.textContent='Karya yang sudah tersedia di katalog. Untuk koleksi lengkap 40+ karya, hubungi Ferry.';list.append(info);
+ const info=document.createElement('p');info.textContent=window.STUDIO.site?.values()['case.catalogIntro']||'Karya yang sudah tersedia di katalog. Untuk koleksi lengkap 40+ karya, hubungi Ferry.';list.append(info);
  const grid=document.createElement('div');grid.className='catalog-grid';
  window.STUDIO.projects.forEach(p=>{const b=document.createElement('button');b.className='catalog-item';const title=document.createElement('strong'),desc=document.createElement('small');title.textContent=p.nama;desc.textContent=p.peek_text;b.append(title,desc);b.onclick=()=>{history.replaceState({case:p.id},'','#case/'+p.id);showCase(p.id);};grid.append(b);});list.append(grid);
- const link=document.createElement('a');link.className='btn btn-dark';link.href='https://wa.me/6289509016792?text=Halo%20Bang%20Ferry%2C%20minta%20katalog%20lengkap%2040%2B%20karya';link.target='_blank';link.rel='noopener';link.textContent='Minta katalog lengkap via WhatsApp ↗';list.append(link);list.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'});
+ const link=document.createElement('a');link.className='btn btn-dark';link.href='https://wa.me/'+(window.STUDIO.site?.values()['contact.whatsapp']||'6289509016792')+'?text='+encodeURIComponent('Halo Bang Ferry, minta katalog lengkap 40+ karya');link.target='_blank';link.rel='noopener';link.textContent=window.STUDIO.site?.values()['case.catalogRequest']||'Minta katalog lengkap via WhatsApp ↗';list.append(link);list.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'});
 });
 routeCase();
 
