@@ -10,8 +10,18 @@
  projectsTab.textContent='Karya & Proyek';pageTab.textContent='Seluruh Konten Website';
  bar.append(projectsTab,pageTab);
  const projectArea=document.createElement('section');projectArea.id='cmsProjectArea';
- [panel.querySelector('.field-actions'),panel.querySelector('#adminProjectList'),panel.querySelector('#projectForm')].forEach(el=>projectArea.append(el));
- const logout=document.querySelector('#logoutAdmin');logout.classList.add('cms-logout');bar.append(logout);
+ // Resolve elements while they are still attached. A detached node is invisible to
+ // document.querySelector, which previously crashed the editor before login.
+ const actions=panel.querySelector('.field-actions');
+ const projectList=panel.querySelector('#adminProjectList');
+ const projectForm=panel.querySelector('#projectForm');
+ const logout=panel.querySelector('#logoutAdmin');
+ if(!actions||!projectList||!projectForm||!logout){
+   console.error('CMS: elemen panel admin tidak lengkap, editor lanjutan dinonaktifkan.');
+   return;
+ }
+ [actions,projectList,projectForm].forEach(el=>projectArea.append(el));
+ logout.classList.add('cms-logout');bar.append(logout);
  panel.prepend(bar);panel.append(projectArea);
  const area=document.createElement('section');area.id='cmsSiteArea';area.hidden=true;area.className='cms-site-area';
  area.innerHTML='<div class="cms-intro"><div><p class="cms-kicker">LIVE CONTENT EDITOR</p><h3>Konten seluruh website</h3><p>Kelola identitas, hero, tentang, proses, keahlian, kontak, SEO, tema dan karakter. Tab Karya & Proyek tetap untuk kartu portofolio.</p></div><span class="cms-connection" id="cmsConnection">Memeriksa koneksi…</span></div>'+
