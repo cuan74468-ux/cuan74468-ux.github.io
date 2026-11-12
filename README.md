@@ -2,6 +2,25 @@
 
 Portofolio statis: HTML, CSS, JavaScript biasa. Tidak membutuhkan npm, build, Vercel, atau server Node.js untuk hosting. Modul JavaScript statis dimuat berurutan setelah Matter.js 0.19.0 dari cdnjs.
 
+## Panduan paling sederhana: mengganti gambar website (12 November 2026)
+
+Masuk ke **https://cuan74468-ux.github.io/studio-admin.html** → **Media & Gambar** → **Gambar yang sedang digunakan**. Kartu ini mencerminkan tempat pemakaian gambar, bukan hanya file di Pustaka Media.
+
+**Cara mengganti thumbnail proyek atau gambar yang sudah tampil:**
+
+1. Klik **Ganti Gambar** pada kartu yang dimaksud.
+2. Tempel URL gambar HTTPS langsung atau path file di GitHub, misalnya `assets/foto-proyek-baru.webp`. Lihat pratinjau.
+3. Tekan **Simpan Gambar**. Sistem menggunakan `saveProject` untuk thumbnail proyek atau `saveSite` untuk karakter, ikon sapaan, dan gambar SEO.
+4. Muat ulang website publik dan pastikan perubahan terlihat. Bila gambar baru belum tersedia di GitHub Pages, tunggu deployment situs sukses lalu muat ulang.
+
+Jika gambar masih ada di komputer, buka [folder assets GitHub](https://github.com/cuan74468-ux/cuan74468-ux.github.io/tree/main/assets), pilih **Add file → Upload files**, unggah dengan nama baru dan commit ke `main`. Salin path `assets/nama-file.webp` ke formulir Ganti Gambar. Cara ini tidak memerlukan token GitHub di Apps Script.
+
+**Kompatibilitas backend:** Ganti Gambar proyek memakai API `saveProject` yang sudah ada pada backend terdahulu. Ganti Karakter/Ikon Sapaan/Gambar SEO memerlukan dukungan `saveSite` dan `siteRevision` pada GAS. Pustaka Media (CRUD katalog, upload melalui browser, arsip) terpisah dan tetap mensyaratkan GAS V4. Jika notifikasi mengatakan V4 belum terpasang, itu **tidak otomatis berarti semua fitur admin tidak bekerja**.
+
+**Batasan penting:** Mengganti gambar karakter ke foto/ilustrasi baru membuat mode karakter menjadi `static` supaya kalibrasi mata/jari Canvas lama tidak salah. `assets/plate.png` dan `assets/grain.png` masih aset sistem yang dikelola lewat source GitHub, bukan editor gambar CMS. File unggahan dan link HTTPS harus dapat ditampilkan publik. Beri nama file baru jika ingin mudah rollback.
+
+Jika simpan proyek dari admin gagal dan backend tidak tersedia, alternatif manual terarah adalah **Google Sheets → tab `projects` → kolom `thumbnail` (F)**. Cadangkan nilai lama, lalu ganti hanya sel gambar proyek yang tepat dengan URL HTTPS atau `assets/...`; jangan mengedit kolom lain. Ini opsi terakhir dan harus diverifikasi di situs.
+
 ## CMS Workspace V4 — Content & Media CRUD (12 November 2026)
 
 **Fitur baru pada source:**
