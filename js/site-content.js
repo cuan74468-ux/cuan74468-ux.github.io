@@ -51,6 +51,7 @@
   field('Kontak','contact.email','Alamat email kontak','#copyEmail code','email','email');
   field('Kontak','contact.whatsapp','Nomor WhatsApp dengan 62 di awal','#contact .cta-links a:nth-child(1)','phone','tel');
   field('Kontak','contact.waGreeting','Pesan pembuka WhatsApp','#contact .cta-links a:nth-child(1)','greeting','text');
+  for(let i=1;i<=5;i++)field('Kontak','contact.tile'+i+'Name','Nama ikon melayang '+i,'#contact .tiles .tile:nth-child('+i+')','data-name');
   // Public lead form
   field('Formulir','form.title','Judul formulir','#leadForm h3');
   field('Formulir','form.nameLabel','Label nama','#leadForm label:nth-child(1)','firstDirect');
@@ -83,10 +84,12 @@
   field('Tema visual','theme.rose','Warna aksen merah muda',null,'special','color');
   field('Tema visual','theme.sky','Warna aksen biru langit',null,'special','color');
   field('Tema visual','theme.live','Warna titik status',null,'special','color');
+  field('Tema visual','theme.bodyFont','Font teks isi',null,'special','font');
+  field('Tema visual','theme.headingFont','Font judul',null,'special','font');
   const defaults = {
     'case.catalogIntro':'Karya yang sudah tersedia di katalog. Untuk koleksi lengkap 40+ karya, hubungi Ferry.',
     'case.catalogRequest':'Minta katalog lengkap via WhatsApp ↗',
-    'character.mode':'animated','character.image':'assets/char.webp','character.scale':'100','character.offset':'0'
+    'character.mode':'animated','character.image':'assets/char.webp','character.scale':'100','character.offset':'0','theme.bodyFont':'Geist','theme.headingFont':'Plus Jakarta Sans'
   };
   const themeMap={'theme.paper':'--paper','theme.ink':'--ink','theme.sun':'--sun','theme.rose':'--rose','theme.sky':'--sky','theme.live':'--live'};
   function direct(el,last=false){
@@ -100,6 +103,7 @@
     const el=select(f.selector);
     if(!el)return '';
     if(f.mode==='content')return el.content||'';
+    if(f.mode==='data-name')return el.getAttribute('data-name')||'';
     if(f.mode==='src')return el.getAttribute('src')||'';
     if(f.mode==='phone'){
       const m=(el.href||'').match(/wa\.me\/(\d+)/);return m?m[1]:'';
@@ -119,6 +123,7 @@
       const el=select(f.selector), value=typeof next[f.key]==='string'?next[f.key]:factory[f.key];
       if(!el)continue;
       if(f.mode==='content')el.setAttribute('content',value);
+      else if(f.mode==='data-name')el.setAttribute('data-name',value);
       else if(f.mode==='src'){const url=safeImage(value);if(url)el.setAttribute('src',url);}
       else if(f.mode==='firstDirect'||f.mode==='lastDirect'){
         const node=direct(el,f.mode==='lastDirect');if(node)node.textContent=(f.key==='hero.helloBefore'||f.key==='hero.headlineBefore'?value+' ':f.key==='hero.helloAfter'?' '+value:value);
@@ -143,6 +148,9 @@
     for(const [key,name] of Object.entries(themeMap)){
       const c=next[key];if(/^#[0-9A-Fa-f]{6}$/.test(c))document.documentElement.style.setProperty(name,c);
     }
+    const fonts={'Geist':'"Geist",ui-sans-serif,system-ui,sans-serif','Plus Jakarta Sans':'"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif','Instrument Serif':'"Instrument Serif",Georgia,serif'};
+    if(fonts[next['theme.bodyFont']])document.documentElement.style.setProperty('--body',fonts[next['theme.bodyFont']]);
+    if(fonts[next['theme.headingFont']])document.documentElement.style.setProperty('--sans-display',fonts[next['theme.headingFont']]);
     const char=document.querySelector('.character');
     if(char){
       const scale=Math.max(60,Math.min(140,Number(next['character.scale'])||100));
