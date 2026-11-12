@@ -24,6 +24,7 @@
     if(f.mode==='href')return el.getAttribute('href')||'';
     if(f.mode==='chipColor')return el.style.getPropertyValue('--bg').trim()||'#FFFFFF';
     if(f.mode==='data-name')return el.getAttribute('data-name')||'';
+    if(f.mode==='svg-use')return el.querySelector('use')?.getAttribute('href')||'';
     if(f.mode==='src')return el.getAttribute('src')||'';
     if(f.mode==='phone'){
       const m=(el.href||'').match(/wa\.me\/(\d+)/);return m?m[1]:'';
@@ -47,6 +48,7 @@
       else if(f.mode==='chipColor'){if(/^#[0-9a-fA-F]{6}$/.test(value))el.style.setProperty('--bg',value);}
       else if(f.mode==='href'){if(/^https:\/\/[^\s<>"']+$/.test(value)||/^#(?:contact|work|about)$/.test(value))el.setAttribute('href',value);}
       else if(f.mode==='data-name')el.setAttribute('data-name',value);
+      else if(f.mode==='svg-use'){if(/^#i-(?:claude|figma|perplexity|codex|notebooklm|openai|midjourney|gmail|linkedin)$/.test(value))el.querySelector('use')?.setAttribute('href',value);}
       else if(f.mode==='src'){const url=safeImage(value);if(url)el.setAttribute('src',url);}
       else if(f.mode==='firstDirect'||f.mode==='lastDirect'){
         const node=direct(el,f.mode==='lastDirect');if(node)node.textContent=(f.key==='hero.helloBefore'||f.key==='hero.headlineBefore'?value+' ':f.key==='hero.helloAfter'?' '+value:value);
@@ -68,6 +70,7 @@
     const seoTitle=next['seo.title'],seoDescription=next['seo.description'];
     document.querySelector('meta[property="og:title"]')?.setAttribute('content',seoTitle);
     document.querySelector('meta[property="og:description"]')?.setAttribute('content',seoDescription);
+    if(next['seo.siteName']){let app=document.querySelector('meta[name="application-name"]');if(!app){app=document.createElement('meta');app.name='application-name';document.head.append(app);}app.content=next['seo.siteName'];}
     if(next['seo.ogImage']&&safeImage(next['seo.ogImage'])){let og=document.querySelector('meta[property="og:image"]');if(!og){og=document.createElement('meta');og.setAttribute('property','og:image');document.head.append(og);}og.setAttribute('content',safeImage(next['seo.ogImage']));}
     for(const [key,name] of Object.entries(themeMap)){
       const c=next[key];if(/^#[0-9A-Fa-f]{6}$/.test(c))document.documentElement.style.setProperty(name,c);
