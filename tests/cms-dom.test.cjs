@@ -56,4 +56,9 @@ assert(adminJS.includes("window.STUDIO_MEDIA?.pick"),'Page and project image fie
 assert(publicBlocksJS.includes('textContent=String(text)'),'Public dynamic content must use text-only rendering');
 assert(!publicBlocksJS.includes('innerHTML='),'Do not interpolate CMS content as HTML');
 
+const manifest=JSON.parse(read('appsscript.json'));
+assert(manifest.oauthScopes.includes('https://www.googleapis.com/auth/spreadsheets'),'GAS must retain Spreadsheet scope');
+assert(manifest.oauthScopes.includes('https://www.googleapis.com/auth/script.external_request'),'GAS needs external request scope for GitHub asset uploads');
+assert(adminJS.includes("request('health')"),'Admin status should verify deployed backend health endpoint');
+
 console.log('PASS: standalone workspace navigation, authenticated client operations, shared schema, and legacy fallback');
