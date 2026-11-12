@@ -180,6 +180,27 @@ const cv = $('#char'), ctx = cv.getContext('2d');
 const IMG_W = 930, IMG_H = 1536;
 const img = new Image(), plate = new Image();
 img.src = 'assets/char.webp'; plate.src = 'assets/plate.png';
+/* Character control: preserve pixel-precise animated mode for calibrated local assets.
+   Uncalibrated/external images are shown as static artwork rather than a broken animation. */
+window.STUDIO.setCharacter = ({mode='animated',image='assets/char.webp'}={}) => {
+  const host=document.querySelector('.character');
+  if(!host)return;
+  host.hidden=mode==='hidden';
+  if(mode==='hidden')return;
+  const isLocal=/^(?:\.\/)?assets\/[a-zA-Z0-9._/-]+$/.test(image)&&!image.includes('..');
+  const animated=mode==='animated'&&isLocal;
+  let still=host.querySelector('.cms-character-still');
+  if(!animated){
+    if(!still){still=document.createElement('img');still.className='cms-character-still';still.alt='Ilustrasi karakter Linggau AI Studio';host.append(still);}
+    const url=window.STUDIO.safeURL(image,true);if(url)still.src=url;
+    cv.hidden=true;still.hidden=false;
+  }else{
+    if(still)still.hidden=true;
+    cv.hidden=false;
+    const url=window.STUDIO.safeURL(image,true);
+    if(url&&img.src!==url)img.src=url;
+  }
+};
 const PLATE = [566, 414, 76, 62];
 const FA = {poly:[[606,421],[616,429],[626,440],[632,451],[636,460],[632,464],[625,463],[618,457],[610,446],[603,437],[598,430]], pivot:[601,428], max:-.2, v:0};
 const FB = {poly:[[578,444],[588,447],[597,455],[604,462],[606,468],[601,471],[594,469],[586,462],[577,455],[572,450]], pivot:[576,448], max:-.17, v:0};
