@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'Code.gs'
+      - 'AdminRecovery.gs'
       - 'tests/**'
       - 'js/**'
       - 'index.html'
@@ -22,6 +23,7 @@ jobs:
       - name: Syntax check (GAS source and browser JavaScript)
         run: |
           node --check < Code.gs
+          node --check < AdminRecovery.gs
           for file in js/*.js; do node --check "$file"; done
       - name: Verify backend in isolated mock environment
         run: node tests/backend.test.cjs
