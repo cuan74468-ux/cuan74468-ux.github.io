@@ -32,7 +32,7 @@ function setupDatabase(){
  try{
   const db=database_(),props=PropertiesService.getScriptProperties();
   if(!props.getProperty('ADMIN_PEPPER'))props.setProperty('ADMIN_PEPPER',Utilities.getUuid()+Utilities.getUuid());
-  [['projects',PROJECT_HEADERS],['leads',LEAD_HEADERS],['admin',ADMIN_HEADERS],['site_content',['key','value','updated_at']],['site_history',['id','tanggal','admin','snapshot_json']]].forEach(([name,headers])=>{
+  [['projects',PROJECT_HEADERS],['leads',LEAD_HEADERS],['admin',ADMIN_HEADERS],['site_content',['key','value','updated_at']],['site_history',['id','tanggal','admin','snapshot_json']],['lead_meta',['lead_id','status','catatan','updated_at']],['project_archive',PROJECT_HEADERS.concat(['archived_at','archived_by'])]].forEach(([name,headers])=>{
    let sh=db.getSheetByName(name);if(!sh)sh=db.insertSheet(name);
    if(sh.getLastRow()===0)sh.getRange(1,1,1,headers.length).setValues([headers]);
    if(JSON.stringify(sh.getRange(1,1,1,headers.length).getValues()[0])!==JSON.stringify(headers))throw Error('Header '+name+' berbeda; tidak diubah.');
@@ -157,10 +157,113 @@ function doPost(e){
  try{
   if(!e||!e.postData||e.postData.contents.length>100000)throw Error('Permintaan tidak valid.');const b=JSON.parse(e.postData.contents);
   lock=LockService.getScriptLock();lock.waitLock(15000);let result;
-  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
+  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'workspaceOverview':result=workspaceOverview_(b);break;case 'workspaceLeads':result=workspaceLeads_(b);break;case 'workspaceSaveLead':result=workspaceSaveLead_(b);break;case 'workspaceArchiveProject':result=workspaceArchiveProject_(b);break;case 'workspaceArchivedProjects':result=workspaceArchivedProjects_(b);break;case 'workspaceRestoreProject':result=workspaceRestoreProject_(b);break;case 'workspaceHistory':result=workspaceHistory_(b);break;case 'workspaceRestoreHistory':result=workspaceRestoreHistory_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
   return json_(result);
  }catch(err){return json_({ok:false,error:String(err.message||'Permintaan gagal.').slice(0,200)});}finally{if(lock)lock.releaseLock();}
 }
+
+/** Admin workspace API v3. All handlers require an active server-side session. */
+const LEAD_META_HEADERS=['lead_id','status','catatan','updated_at'];
+const ARCHIVE_HEADERS=PROJECT_HEADERS.concat(['archived_at','archived_by']);
+const WORKSPACE_STATUSES=['baru','diproses','selesai','arsip'];
+
+function workspaceMeta_(){
+ const rows=rows_('lead_meta',LEAD_META_HEADERS),result={};
+ rows.filter(row=>row[0]).forEach(row=>{
+  const status=String(row[1]);
+  result[String(row[0])]={status:WORKSPACE_STATUSES.includes(status)?status:'baru',catatan:String(row[2]||''),updated_at:String(row[3]||'')};
+ });
+ return result;
+}
+function workspaceOverview_(b){
+ const account=session_(b.token),meta=workspaceMeta_();
+ const leads=rows_('leads',LEAD_HEADERS).filter(r=>r[0]);
+ const stats={baru:0,diproses:0,selesai:0,arsip:0};
+ leads.forEach(r=>{const status=meta[String(r[0])]?.status||'baru';stats[status]++;});
+ const projects=projects_();
+ return {ok:true,account:{email:account.email},projects:projects.length,featured:projects.filter(p=>p.featured_ring).length,leads:leads.length,leadStats:stats,archivedProjects:rows_('project_archive',ARCHIVE_HEADERS).filter(r=>r[0]).length,siteRevision:siteState_().siteRevision};
+}
+function workspaceLeads_(b){
+ session_(b.token);
+ const page=Math.max(1,Math.min(100000,Number.parseInt(b.page,10)||1));
+ const limit=Math.max(5,Math.min(30,Number.parseInt(b.limit,10)||12));
+ const status=String(b.status||'semua');
+ if(status!=='semua'&&!WORKSPACE_STATUSES.includes(status))throw Error('Status tidak valid.');
+ const q=String(b.search||'').trim().toLowerCase().slice(0,100),meta=workspaceMeta_();
+ const matches=rows_('leads',LEAD_HEADERS).filter(r=>r[0]).reverse().map(r=>{
+  const entry=meta[String(r[0])]||{status:'baru',catatan:'',updated_at:''};
+  return Object.fromEntries(LEAD_HEADERS.map((key,i)=>[key,String(r[i]||'')])).valueOf()&&
+   {id:String(r[0]),nama:String(r[1]||''),whatsapp:String(r[2]||''),kebutuhan:String(r[3]||''),pesan:String(r[4]||''),tanggal:String(r[5]||''),status:entry.status,catatan:entry.catatan,updated_at:entry.updated_at};
+ }).filter(x=>(status==='semua'||x.status===status)&&(!q||[x.nama,x.whatsapp,x.kebutuhan,x.pesan].some(v=>v.toLowerCase().includes(q))));
+ const total=matches.length,pages=Math.max(1,Math.ceil(total/limit)),current=Math.min(page,pages);
+ return {ok:true,items:matches.slice((current-1)*limit,current*limit),page:current,pages,total,limit};
+}
+function workspaceSaveLead_(b){
+ const account=session_(b.token),id=text_(b.id,8,100,'ID pesan'),status=String(b.status||'');
+ if(!WORKSPACE_STATUSES.includes(status))throw Error('Status tidak valid.');
+ const note=text_(String(b.catatan||''),0,2000,'Catatan');
+ if(!rows_('leads',LEAD_HEADERS).some(r=>String(r[0])===id))throw Error('Pesan tidak ditemukan.');
+ const sh=sheet_('lead_meta',LEAD_META_HEADERS);
+ const existing=rows_('lead_meta',LEAD_META_HEADERS).findIndex(r=>String(r[0])===id);
+ const row=existing<0?sh.getLastRow()+1:existing+2;
+ sh.getRange(row,1,1,4).setValues([[id,status,literal_(note),new Date().toISOString()]]);
+ SpreadsheetApp.flush();return {ok:true,id,status,editor:account.email};
+}
+function workspaceArchiveProject_(b){
+ const account=session_(b.token),id=text_(b.id,1,60,'ID'),data=publicData_();
+ if(b.expectedRevision!==data.revision)throw Error('Daftar proyek berubah. Muat ulang terlebih dahulu.');
+ if(data.projects.length<=1)throw Error('Simpan minimal satu proyek aktif.');
+ const source=rows_('projects',PROJECT_HEADERS),idx=source.findIndex(r=>String(r[0])===id);
+ if(idx<0)throw Error('Proyek tidak ditemukan.');
+ const archive=sheet_('project_archive',ARCHIVE_HEADERS);
+ if(rows_('project_archive',ARCHIVE_HEADERS).some(r=>String(r[0])===id))throw Error('Proyek sudah ada di arsip.');
+ archive.appendRow([...source[idx],new Date().toISOString(),literal_(account.email)]);
+ sheet_('projects',PROJECT_HEADERS).deleteRow(idx+2);SpreadsheetApp.flush();
+ return {...publicData_(),archivedId:id};
+}
+function workspaceArchivedProjects_(b){
+ session_(b.token);
+ const page=Math.max(1,Number.parseInt(b.page,10)||1),limit=Math.min(30,Math.max(5,Number.parseInt(b.limit,10)||12));
+ const q=String(b.search||'').toLowerCase().trim().slice(0,100);
+ const items=rows_('project_archive',ARCHIVE_HEADERS).filter(r=>r[0]).reverse().map(r=>{
+  const item=Object.fromEntries(ARCHIVE_HEADERS.map((k,i)=>[k,String(r[i]||'')]));
+  item.featured_ring=item.featured_ring==='true'||item.featured_ring==='TRUE';
+  return item;
+ }).filter(p=>!q||p.nama.toLowerCase().includes(q)||p.id.toLowerCase().includes(q));
+ const total=items.length,pages=Math.max(1,Math.ceil(total/limit)),actual=Math.min(page,pages);
+ return {ok:true,items:items.slice((actual-1)*limit,actual*limit),total,page:actual,pages};
+}
+function workspaceRestoreProject_(b){
+ session_(b.token);
+ const data=publicData_(),id=text_(b.id,1,60,'ID');
+ if(b.expectedRevision!==data.revision)throw Error('Daftar proyek berubah. Muat ulang terlebih dahulu.');
+ if(data.projects.some(p=>p.id===id))throw Error('Proyek dengan ID tersebut sudah aktif.');
+ const archive=sheet_('project_archive',ARCHIVE_HEADERS),items=rows_('project_archive',ARCHIVE_HEADERS);
+ const index=items.findIndex(r=>String(r[0])===id);
+ if(index<0)throw Error('Proyek tidak ditemukan dalam arsip.');
+ const project=items[index].slice(0,PROJECT_HEADERS.length);
+ if(project[7]===true&&data.projects.filter(p=>p.featured_ring).length>=5)project[7]=false;
+ const sh=sheet_('projects',PROJECT_HEADERS);
+ sh.getRange(sh.getLastRow()+1,1,1,8).setValues([project]);
+ archive.deleteRow(index+2);SpreadsheetApp.flush();
+ return {...publicData_(),restoredId:id};
+}
+function workspaceHistory_(b){
+ session_(b.token);
+ const rows=rows_('site_history',['id','tanggal','admin','snapshot_json']).filter(r=>r[0]).reverse();
+ const limit=10,page=Math.max(1,Number.parseInt(b.page,10)||1),pages=Math.max(1,Math.ceil(rows.length/limit)),actual=Math.min(page,pages);
+ return {ok:true,items:rows.slice((actual-1)*limit,actual*limit).map(r=>({id:String(r[0]),tanggal:String(r[1]),admin:String(r[2])})),total:rows.length,pages,page:actual};
+}
+function workspaceRestoreHistory_(b){
+ const account=session_(b.token),id=text_(b.id,8,100,'ID versi'),state=siteState_();
+ if(b.expectedSiteRevision!==state.siteRevision)throw Error('Halaman telah berubah. Muat ulang sebelum memulihkan.');
+ const sh=sheet_('site_history',['id','tanggal','admin','snapshot_json']),rows=rows_('site_history',['id','tanggal','admin','snapshot_json']);
+ const hit=rows.find(r=>String(r[0])===id);
+ if(!hit)throw Error('Riwayat versi tidak ditemukan.');
+ const restored=checkSiteContent_(JSON.parse(String(hit[3])));
+ return writeSite_(restored,account.email);
+}
+
 /** Run in the editor after deployment. Copy the printed JSON into the repository's config.json. */
 function getFrontendConfig(){const url=ScriptApp.getService().getUrl();if(!url)throw Error('Deploy sebagai Web app terlebih dahulu.');console.log(JSON.stringify({gasUrl:url,spreadsheetUrl:database_().getUrl()},null,2));}
 
