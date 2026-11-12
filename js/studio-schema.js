@@ -56,6 +56,7 @@
   field('Kontak','contact.whatsapp','Nomor WhatsApp dengan 62 di awal','#contact .cta-links a:nth-child(1)','phone','tel');
   field('Kontak','contact.waGreeting','Pesan pembuka WhatsApp','#contact .cta-links a:nth-child(1)','greeting','text');
   for(let i=1;i<=5;i++)field('Kontak','contact.tile'+i+'Name','Nama ikon melayang '+i,'#contact .tiles .tile:nth-child('+i+')','data-name');
+  for(let i=1;i<=5;i++)field('Kontak','contact.tile'+i+'Icon','Simbol ikon melayang '+i,'#contact .tiles .tile:nth-child('+i+')','svg-use','icon');
   // Public lead form
   field('Formulir','form.title','Judul formulir','#leadForm h3');
   field('Formulir','form.nameLabel','Label nama','#leadForm label:nth-child(1)','firstDirect');
