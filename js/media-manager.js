@@ -19,18 +19,98 @@ async function copyURL(url){
  try{await navigator.clipboard.writeText(url);toast('Alamat gambar disalin.');}
  catch{toast('Salin manual: '+url,true);}
 }
+
+/** Inventory by place of use, rather than de-duplicating by file URL.
+    This section intentionally works even if the V4 media library is unavailable. */
 function usedMedia(){
- const map=new Map(),put=(url,title)=>{const src=safeImage(url);if(src&&!map.has(src))map.set(src,title);};
- for(const p of state.projects)put(p.thumbnail,p.nama);
- for(const key of ['character.image','hero.waveImage','seo.ogImage'])put(state.draft[key]||state.siteContent[key],key);
- [['assets/char.webp','Karakter utama'],['assets/wave.png','Ilustrasi sapaan'],['assets/plate.png','Laptop'],['assets/grain.png','Tekstur']].forEach(([x,y])=>put(x,y));
  const root=$('#mediaUsedGrid');root.replaceChildren();
- for(const [url,title] of map){
-  const card=imageCard({title,url});
-  const footer=el('div','media-actions');footer.append(btn('Salin URL','button subtle small',()=>copyURL(url)));card.append(footer);
-  root.append(card);
+ const slots=state.projects.map(p=>({
+   kind:'project',id:p.id,title:p.nama,location:'Thumbnail karya / cincin portofolio',url:p.thumbnail
+ }));
+ slots.push({
+   kind:'site',key:'character.image',title:'Karakter utama',
+   location:'Hero · figur di sebelah judul',
+   url:state.siteContent['character.image']||state.defaults['character.image']||'assets/char.webp'
+ },{
+   kind:'site',key:'hero.waveImage',title:'Ikon sapaan',
+   location:'Hero · gambar lambaian',
+   url:state.siteContent['hero.waveImage']||state.defaults['hero.waveImage']||'assets/wave.png'
+ },{
+   kind:'site',key:'seo.ogImage',title:'Gambar pratinjau sosial',
+   location:'SEO · media sosial (opsional)',
+   url:state.siteContent['seo.ogImage']||state.defaults['seo.ogImage']||''
+ });
+ for(const item of slots){
+   const card=imageCard({...item,alt_text:item.location});
+   const badge=el('p','media-type',item.location);
+   const actions=el('div','media-actions');
+   actions.append(btn(item.url?'Ganti Gambar':'Pasang Gambar','button primary small',()=>replaceActive(item)));
+   if(item.url)actions.append(btn('Salin alamat','button subtle small',()=>copyURL(item.url)));
+   card.append(badge,actions);
+   root.append(card);
+ }
+ const note=el('p','media-system-heading','Aset sistem lainnya');
+ root.append(note);
+ for(const [title,url,description] of [
+   ['Lapisan laptop','assets/plate.png','Bagian dari animasi Canvas; perubahan file memerlukan pemeriksaan koordinat'],
+   ['Tekstur latar','assets/grain.png','Efek dekoratif pada CSS; belum mempunyai pengaturan CMS']
+ ]){
+   const card=imageCard({title,url});
+   card.append(el('p','media-type',description));
+   const footer=el('div','media-actions'),link=el('a','button secondary small','Kelola file di GitHub ↗');
+   link.href='https://github.com/cuan74468-ux/cuan74468-ux.github.io/tree/main/assets';
+   link.target='_blank';link.rel='noopener noreferrer';footer.append(link);card.append(footer);root.append(card);
  }
 }
+function replaceActive(slot){
+ const form=el('form');form.id='replaceActiveImageForm';
+ const intro=el('p','drawer-meta','Lokasi penggunaan: '+slot.location);
+ const image=imageCard({...slot,title:'Gambar saat ini'});
+ image.classList.add('active-image-current');
+ form.append(intro,image);
+ const label=el('label');label.append(document.createTextNode('Gambar pengganti — URL HTTPS atau path assets/'));
+ const input=el('input');input.name='imageURL';input.type='text';input.required=true;
+ input.maxLength=1500;input.autocomplete='off';input.value=slot.url||'';
+ input.placeholder='assets/gambar-baru.webp atau https://…';
+ label.append(input);form.append(label);
+ const hint=el('p','drawer-meta',
+   'Cara paling sederhana: unggah gambar baru melalui GitHub Web → folder assets → salin path assets/nama-file.webp → tempel di sini. Tidak memerlukan fitur upload GAS V4.');
+ form.append(hint);
+ const preview=el('img','drawer-preview');preview.alt='Pratinjau gambar pengganti';preview.hidden=true;
+ const feedback=el('p','drawer-meta','');
+ const draw=()=>{
+   const src=safeImage(input.value.trim());preview.hidden=!src;
+   if(src){preview.src=src;feedback.textContent='Memeriksa pratinjau gambar…';}
+   else feedback.textContent='Masukkan URL gambar HTTPS atau path assets/ yang valid.';
+ };
+ preview.onload=()=>{feedback.textContent='Pratinjau tersedia. Konfirmasi untuk mengganti gambar pada lokasi ini.';};
+ preview.onerror=()=>{preview.hidden=true;feedback.textContent='Pratinjau gagal. Pastikan URL langsung menuju gambar dan file sudah tersedia di GitHub Pages.';};
+ input.addEventListener('input',draw);form.append(preview,feedback);draw();
+ if(slot.key==='character.image'){
+   const notice=el('p','inline-notice','Karakter pengganti otomatis menggunakan mode statis. Gerakan mata/jari membutuhkan kalibrasi khusus.');
+   form.append(notice);
+ }
+ const github=el('a','button subtle small','Unggah file via GitHub Web ↗');
+ github.href='https://github.com/cuan74468-ux/cuan74468-ux.github.io/tree/main/assets';
+ github.target='_blank';github.rel='noopener noreferrer';form.append(github);
+ const cancel=btn('Batal','button subtle',closeDrawer);
+ const choose=btn('Pilih Gambar Lain','button secondary',()=>{
+   pick(item=>{input.value=item.url;input.dispatchEvent(new Event('input'));});
+ });
+ const save=btn('Simpan Gambar','button primary',async()=>{
+   if(!form.reportValidity())return;save.disabled=true;
+   try{
+     const result=await A.saveUsageImage(slot,input.value);
+     closeDrawer();usedMedia();
+     toast(result.message);
+   }catch(error){
+     feedback.textContent='Belum tersimpan: '+String(error.message||'Gagal menyimpan gambar.');
+     toast(error.message,true);
+   }finally{save.disabled=false;}
+ });
+ openDrawer('Ganti Gambar — '+slot.title,'ASET YANG DIPAKAI',form,[cancel,choose,save]);
+}
+
 function card(item){
  const c=imageCard(item);
  c.append(el('div','media-type',(item.kind==='upload'?'GitHub upload':'URL eksternal')+' · '+friendlyDate(item.updated_at)));
@@ -63,7 +143,7 @@ async function load(){
  }catch(error){
   if(seq!==lastSeq)return;
   grid.replaceChildren(el('p','empty-state','Pustaka media belum aktif: '+error.message));
-  $('#mediaNotice').textContent='Periksa apakah Code.gs V4 sudah di-deploy dan tab media_library sudah dibuat. Login tidak perlu direset.';
+  $('#mediaNotice').textContent='Pustaka Media V4 belum aktif. Penggantian gambar di bagian “Gambar yang sedang digunakan” tetap bisa dilakukan melalui tautan gambar baru jika API proyek/editor halaman tersedia. Anda tidak perlu reset password.';
  }
 }
 function edit(item=null){
@@ -203,5 +283,5 @@ function pick(onSelect){
  openDrawer('Pilih Gambar','MEDIA PICKER',wrap,[btn('Kembali','button subtle',back)]);
  render();
 }
-window.STUDIO_MEDIA={load,edit,upload,pick};
+window.STUDIO_MEDIA={load,edit,upload,pick,usedMedia,replaceActive};
 })();
