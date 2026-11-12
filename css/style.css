@@ -482,6 +482,12 @@ html.lite .hero-bg i,html.lite .glow i{animation:none!important}
 .cms-backend-status[data-connection="pending"]{background:#f6f2eb;color:#70583f}
 
 
+/* Desktop hero: balanced lines must wrap within the viewport; mobile breakpoints remain unchanged. */
+@media (min-width:801px){
+  .hero h1{font-size:clamp(30px,3.15vw,47px);line-height:1.22;max-width:min(100%,1040px);padding-inline:12px;text-wrap:balance}
+  .hero h1 .ln{white-space:normal;overflow-wrap:break-word;text-wrap:balance}
+}
+
 /* Optional editorial content blocks, rendered only when published in CMS. */
 .additional-content{padding:clamp(55px,7vw,115px) 0;background:var(--paper);position:relative}
 .additional-content[hidden]{display:none!important}
