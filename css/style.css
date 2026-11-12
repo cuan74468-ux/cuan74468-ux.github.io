@@ -480,3 +480,22 @@ html.lite .hero-bg i,html.lite .glow i{animation:none!important}
 .cms-backend-status[data-connection="ready"]{background:#edf7f0;color:#286345}
 .cms-backend-status[data-connection="legacy"]{background:#fff5e7;color:#805622}
 .cms-backend-status[data-connection="pending"]{background:#f6f2eb;color:#70583f}
+
+
+/* Optional editorial content blocks, rendered only when published in CMS. */
+.additional-content{padding:clamp(55px,7vw,115px) 0;background:var(--paper);position:relative}
+.additional-content[hidden]{display:none!important}
+.additional-wrap{width:min(100% - 40px,var(--max));margin:0 auto}
+.additional-kicker{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.additional-title{font:700 clamp(26px,4vw,48px)/1.17 var(--sans-display);letter-spacing:-.04em;margin:12px 0 30px;max-width:700px;color:var(--ink)}
+.additional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:21px}
+.additional-card{min-width:0;padding:24px 25px 27px;background:#fff;border:1px solid var(--line);border-radius:21px;box-shadow:0 10px 30px -28px rgba(21,22,28,.3);transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.additional-card:hover{transform:translateY(-3px);box-shadow:0 18px 45px -30px rgba(21,22,28,.28)}
+.additional-cover{display:block;width:100%;height:clamp(170px,24vw,275px);border-radius:13px;object-fit:cover;background:var(--paper-2);margin:0 0 21px}
+.additional-index{display:block;font-size:11px;letter-spacing:.12em;color:var(--ink-3);margin:0 0 11px}
+.additional-card h3{font:700 clamp(19px,2.4vw,25px)/1.25 var(--sans-display);letter-spacing:-.028em;color:var(--ink);margin:0 0 12px}
+.additional-description{font-size:15px;line-height:1.72;color:var(--ink-2);white-space:pre-line;overflow-wrap:anywhere;margin:0;max-width:67ch}
+.additional-link{display:inline-flex;gap:8px;align-items:center;margin:19px 0 0;color:var(--ink);font-weight:650;text-underline-offset:4px}
+.additional-link::after{content:' ↗'}
+@media(max-width:760px){.additional-grid{grid-template-columns:1fr;gap:14px}.additional-card{padding:18px}.additional-cover{height:220px}.additional-wrap{width:min(100% - 32px,var(--max))}}
+@media(prefers-reduced-motion:reduce){.additional-card{transition:none!important}.additional-card:hover{transform:none!important}}
