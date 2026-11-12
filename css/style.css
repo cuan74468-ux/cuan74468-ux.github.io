@@ -464,3 +464,13 @@ html.lite .hero-bg i,html.lite .glow i{animation:none!important}
  .cms-fields{padding:5px 14px 12px}.cms-history{flex-direction:column;align-items:flex-start}
  .cms-editor-actions .btn{flex:1 1 calc(50% - 9px);font-size:11px}
 }
+
+/* CMS project gallery, same quiet visual language as the public portfolio. */
+.admin-modal .admin-projects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0 12px}
+.admin-modal .admin-projects .cms-project-card{display:grid;grid-template-columns:78px minmax(0,1fr);align-items:center;gap:13px;margin:0;text-align:left;padding:10px;border:1px solid #e4e7ee;border-radius:14px;background:#fff;min-height:97px;cursor:pointer}
+.admin-modal .admin-projects .cms-project-card:hover{border-color:#afb6cf}
+.admin-modal .admin-projects .cms-project-card.selected{border-color:#7676c9;box-shadow:0 0 0 2px #eeeefe}
+.cms-project-card img{width:78px;height:72px;object-fit:cover;border-radius:9px;background:#eeeef2}
+.cms-project-card strong{display:block;font:600 13px/1.4 var(--body);overflow-wrap:anywhere}
+.cms-project-card small{display:block;font:11px/1.6 var(--body);color:#777e8c;margin-top:5px}
+@media(max-width:650px){.admin-modal .admin-projects{grid-template-columns:1fr}}
