@@ -11,7 +11,13 @@ const database={getSheetByName:n=>sheets.get(n),insertSheet:n=>{const s=new Shee
 const ctx={console,Date,JSON,Map,Set,Utilities:{getUuid:()=>crypto.randomUUID(),Charset:{UTF_8:'utf8'},DigestAlgorithm:{SHA_256:'sha256'},computeDigest:(a,v)=>[...crypto.createHash(a).update(v).digest()],computeHmacSha256Signature:(v,k)=>[...crypto.createHmac('sha256',k).update(v).digest()],formatDate:()=>new Date().toISOString().slice(0,10)},PropertiesService:{getScriptProperties:()=>propertyApi},SpreadsheetApp:{openById:()=>database,flush:()=>{}},CacheService:{getScriptCache:()=>({put:(k,v)=>cache.set(k,v),get:k=>cache.get(k),remove:k=>cache.delete(k)})},LockService:{getScriptLock:()=>({waitLock:()=>{},releaseLock:()=>{}})},ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({setMimeType:()=>JSON.parse(text)})},ScriptApp:{getService:()=>({getUrl:()=>null})}};
 vm.createContext(ctx);vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../Code.gs'),'utf8'),ctx);
 const pass='Only-For-Unit-Test-456!';props.set('ADMIN_INITIAL_PASSWORD',pass);
-assert.equal(ctx.setupDatabase().ok,true);assert.equal(sheets.get('projects').rows.length,6);
+assert.equal(ctx.doGet({parameter:{action:'health'}}).ready,false,'Must not report ready before setup');
+assert.equal(ctx.setupDatabase().ok,true);
+assert.equal(ctx.doGet({parameter:{action:'health'}}).ready,true,'Setup should enable health readiness');
+const adminVerifier=sheets.get('admin').rows[1][1];
+sheets.get('admin').rows[1][1]='pending$sample$hash';
+assert.equal(ctx.doGet({parameter:{action:'health'}}).ready,false,'Pending admin verifier must not report ready');
+sheets.get('admin').rows[1][1]=adminVerifier;assert.equal(sheets.get('projects').rows.length,6);
 sheets.get('leads').appendRow(['preserved','Old lead','','','','']);ctx.setupDatabase();assert.equal(sheets.get('leads').rows.length,2);assert.equal(sheets.get('projects').rows.length,6);assert.match(sheets.get('admin').rows[1][1],/^hmac-sha256\$/);assert(!JSON.stringify([...sheets.values()]).includes(pass));
 const post=b=>ctx.doPost({postData:{contents:JSON.stringify(b)}});
 let result=ctx.doGet({parameter:{action:'projects'}});assert.equal(result.projects.length,5);assert(!JSON.stringify(result).includes('password'));assert.equal(ctx.doGet({parameter:{action:'admin'}}).ok,false);
