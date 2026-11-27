@@ -1,0 +1,24 @@
+const assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+(async()=>{const browser=await chromium.launch({headless:true});
+try{
+ const page=await browser.newPage({viewport:{width:360,height:900},reducedMotion:'reduce'});
+ await page.goto('https://cuan74468-ux.github.io/',{waitUntil:'domcontentloaded',timeout:45000});
+ await page.waitForFunction(()=>window.STUDIO?.projects?.length===6,undefined,{timeout:30000});
+ const form=page.locator('#leadForm');
+ await form.locator('[name=nama]').fill('QA PORTFOLIO — DATA UJI');
+ await form.locator('[name=whatsapp]').fill('000000000000');
+ await form.locator('[name=kebutuhan]').selectOption({label:'WebApp UMKM'});
+ await form.locator('[name=pesan]').fill('UJI INTERNAL GO LIVE 20261127 — jangan ditindaklanjuti.');
+ await form.locator('[name=consent]').check();
+ let sent=null;
+ page.on('request',r=>{if(r.method()==='POST'&&r.url().startsWith('https://script.google.com/macros/s/')){try{const b=r.postDataJSON();if(b?.action==='lead')sent=b}catch{try{const b=JSON.parse(r.postData());if(b.action==='lead')sent=b}catch{}}}});
+ await page.waitForTimeout(2100);
+ await form.locator('button[type=submit]').click();
+ await page.waitForFunction(()=>document.querySelector('#leadForm [name=nama]').value===''&&document.querySelector('#leadStatus').textContent.includes('berhasil'),undefined,{timeout:35000});
+ assert.ok(sent?.requestId,'lead request ID');
+ console.log('PASS public form submission; test ID '+sent.requestId);
+ const retry=await page.evaluate(async b=>{const cfg=await(await fetch('config.json',{cache:'no-store'})).json();const r=await fetch(cfg.gasUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(b),credentials:'omit'});const out=await r.json();return {ok:out.ok,duplicate:out.duplicate,id:out.id}},sent);
+ assert.equal(retry.ok,true);assert.equal(retry.duplicate,true);assert.equal(retry.id,sent.requestId);
+ console.log('PASS same request ID replay: duplicate recognized');
+}finally{await browser.close()}})().catch(e=>{console.error(e.message);process.exitCode=1});
