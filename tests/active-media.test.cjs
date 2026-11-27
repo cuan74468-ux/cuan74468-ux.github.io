@@ -73,3 +73,15 @@ test('used media cards are prioritized and include a replacement action',()=>{
  assert(mod.includes('assets/char.webp')&&mod.includes('assets/wave.png'));
  assert(mod.includes('assets/plate.png')&&mod.includes('assets/grain.png'));
 });
+
+test('media library renders local video with controls, no autoplay, and excludes video from image picker',()=>{
+ const src=read('js/media-manager.js'),start=src.indexOf('function isVideo('),end=src.indexOf('async function copyURL',start);
+ const node=tag=>({tag,attrs:{},setAttribute(k,v){this.attrs[k]=v},addEventListener(){},append(){},classList:{add(){}}});
+ const f=vm.runInNewContext(src.slice(start,end)+'\n({isVideo,mediaPreview});',{el:node,safeImage:url=>String(url||'')});
+ for(const item of [{kind:'video',url:'assets/promo.mp4'},{kind:'external',url:'https://example.org/promo.webm?x=1'}]){
+  const v=f.mediaPreview(item);assert.equal(v.tag,'video');assert.equal(v.controls,true);assert.equal(v.preload,'none');assert.equal(v.autoplay,undefined);assert.equal(v.src,item.url);
+ }
+ const image=f.mediaPreview({kind:'image',url:'assets/photo.jpg',alt_text:'Foto'});assert.equal(image.tag,'img');assert.equal(image.alt,'Foto');
+ const pending=f.mediaPreview({status:'pending_repo_sync',url:'assets/pending.jpeg'});assert.equal(pending.hidden,true);assert.equal(pending.src,undefined);
+ assert(src.includes('if(isVideo(item)||!safeImage(item.url)||candidateMap.has(item.url))return;'));
+});
