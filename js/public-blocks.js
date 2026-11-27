@@ -15,7 +15,7 @@ window.STUDIO.renderBlocks=(all=[])=>{
  entries.forEach((p,i)=>{
   const card=make('article','additional-card');
   const image=safeImage(p.image_url);
-  if(image){const img=make('img','additional-cover');img.src=image;img.alt=p.title;img.loading='lazy';card.append(img);}
+  if(image){const img=make('img','additional-cover');img.src=image;img.alt=p.title;img.loading='lazy';img.addEventListener('error',()=>img.remove(),{once:true});card.append(img);}
   card.append(make('small','additional-index',String(i+1).padStart(2,'0')+' / '+(entries.length).toString().padStart(2,'0')));
   card.append(make('h3','',p.title));
   card.append(make('p','additional-description',p.body));

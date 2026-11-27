@@ -8,7 +8,10 @@ on:
       - 'tests/**'
       - 'js/**'
       - 'index.html'
+      - 'assets/bakso-len/**'
       - '.github/workflows/backend-qa.yml'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 jobs:
   verify-backend:
@@ -31,3 +34,6 @@ jobs:
         run: node tests/cms-dom.test.cjs
       - name: Verify direct active-media replacement and backwards compatibility
         run: node --test tests/active-media.test.cjs
+
+      - name: Verify synced portfolio assets
+        run: node --test tests/portfolio-media.test.cjs
