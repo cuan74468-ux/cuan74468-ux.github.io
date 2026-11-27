@@ -6,13 +6,21 @@ const A=window.STUDIO_ADMIN;if(!A)throw Error('Admin workspace bridge missing.')
 const {state,request,toast,el,btn,openDrawer,closeDrawer,drawPager,makeFormField,safeImage,friendlyDate}=A;
 const $=selector=>document.querySelector(selector);
 let lastSeq=0;
-function imageCard(item){
- const c=el('article','media-card'),img=el('img');
- img.alt=item.alt_text||item.title||'Gambar portofolio';img.loading='lazy';
+function isVideo(item){return item?.kind==='video'||/\.(mp4|webm)(?:[?#].*)?$/i.test(String(item?.url||''));}
+function mediaPreview(item,cls='',onError=()=>{}){
+ const video=isVideo(item),node=el(video?'video':'img',cls);
+ if(video){node.controls=true;node.preload='none';node.playsInline=true;node.setAttribute('aria-label',item.title||'Video portofolio');}
+ else{node.alt=item.alt_text||item.title||'Gambar portofolio';node.loading='lazy';}
  const src=safeImage(item.url);
- if(src){img.src=src;img.addEventListener('error',()=>{img.hidden=true;c.classList.add('media-broken');});}
- else img.hidden=true;
- c.append(img,el('strong','',item.title||'Gambar tanpa nama'),el('small','',item.url||''));
+ if(src&&item.status!=='pending_repo_sync'){node.addEventListener('error',()=>{node.hidden=true;onError();},{once:true});node.src=src;}
+ else node.hidden=true;
+ return node;
+}
+function imageCard(item){
+ const c=el('article','media-card');
+ const preview=mediaPreview(item,'',()=>c.classList.add('media-broken'));
+ c.append(preview,el('strong','',item.title||'Media tanpa nama'),el('small','',item.url||''));
+ if(item.status==='pending_repo_sync')c.append(el('p','media-type','Menunggu sinkronisasi repository'));
  return c;
 }
 async function copyURL(url){
@@ -119,8 +127,9 @@ function replaceActive(slot){
 
 function card(item){
  const c=imageCard(item);
- c.append(el('div','media-type',(item.kind==='upload'?'GitHub upload':'URL eksternal')+' · '+friendlyDate(item.updated_at)));
+ c.append(el('div','media-type',(isVideo(item)?'Video':item.kind==='upload'?'GitHub upload':item.kind==='external'?'URL eksternal':'Aset repository')+' · '+friendlyDate(item.updated_at)));
  const actions=el('div','media-actions');
+ if(item.status==='pending_repo_sync')return c;
  if(item.status==='archived')actions.append(btn('Pulihkan','button secondary small',()=>restore(item)));
  else{
   actions.append(btn('Edit','button secondary small',()=>edit(item)));
@@ -133,7 +142,7 @@ async function load(){
  if(!state.token)return;
  const grid=$('#mediaGrid');if(!grid)return;
  const seq=++lastSeq;
- grid.replaceChildren(el('p','empty-state','Memuat gambar…'));
+ grid.replaceChildren(el('p','empty-state','Memuat media…'));
  usedMedia();
  try{
   const r=await request('mediaList',{token:state.token,page:state.mediaPage,limit:12,search:state.mediaSearch,status:state.mediaFilter});
@@ -143,7 +152,7 @@ async function load(){
    ?'Upload aktif: JPG, PNG, WebP, GIF hingga 900 KB. Gambar disimpan dalam repository GitHub dan perlu deployment Pages sebelum tampil publik. Hapus dari pustaka = arsip aman, bukan penghapusan permanen file.'
    :'Tambah/edit URL siap digunakan. Untuk upload langsung dari komputer, atur MEDIA_GITHUB_TOKEN pada GAS Script Properties (fine-grained PAT, akses Contents: Read and write khusus repository ini), lalu deploy backend V4.';
   grid.replaceChildren();
-  if(!state.media.length)grid.append(el('p','empty-state','Belum ada gambar di pustaka. Tambahkan tautan atau upload gambar pertama.'));
+  if(!state.media.length)grid.append(el('p','empty-state','Belum ada media di pustaka. Tambahkan tautan atau upload gambar pertama.'));
   else state.media.forEach(x=>grid.append(card(x)));
   drawPager($('#mediaPager'),state.mediaPage,state.mediaPages,page=>{state.mediaPage=page;load();});
  }catch(error){
@@ -166,7 +175,7 @@ function edit(item=null){
   img.onload=()=>{notice.textContent='Gambar dapat ditampilkan. Pastikan memiliki izin penggunaan.';};
   img.onerror=()=>{img.hidden=true;notice.textContent='Gambar tidak dapat ditampilkan. Periksa link langsung, izin akses, atau batasan hotlink.';};
   form.elements.url.addEventListener('input',check);form.append(img,notice);check();
- }else if(item){const img=el('img','drawer-preview');img.alt=item.title;img.src=safeImage(item.url);form.append(img);}
+ }else if(item){form.append(mediaPreview(item,'drawer-preview'));}
  const save=btn(item?'Simpan Perubahan':'Simpan Media URL','button primary',async()=>{
   if(!form.reportValidity())return;save.disabled=true;
   try{
@@ -272,7 +281,7 @@ function pick(onSelect){
    results.replaceChildren(el('p','muted','Memuat pilihan gambar…'));
    const candidateMap=new Map();
    const add=item=>{
-     if(!safeImage(item.url)||candidateMap.has(item.url))return;
+     if(isVideo(item)||!safeImage(item.url)||candidateMap.has(item.url))return;
      if(q&&!String(item.title||'').toLowerCase().includes(q.toLowerCase())&&!String(item.url).toLowerCase().includes(q.toLowerCase()))return;
      candidateMap.set(item.url,item);
    };
