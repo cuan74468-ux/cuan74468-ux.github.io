@@ -41,11 +41,11 @@ function renderReviews(){
  $('review-list-status').textContent=matches.length?'Ulasan terbaru yang telah dimoderasi.':'Belum ada ulasan yang ditayangkan untuk pilihan ini.';
  for(const r of matches){const card=node('article',null,'library-review-entry');card.append(node('strong',r.display_name),node('small',r.target_title+' · '+r.date+(r.rating?' · '+r.rating+'/5':'')),node('p',r.comment));list.append(card);}
 }
-async function loadReviews(){try{const r=await request('libraryReviews');if(!r.enabled){form.hidden=true;$('review-list-status').textContent='Ulasan belum dibuka.';return;}reviews=Array.isArray(r.items)?r.items.slice(0,60).filter(x=>x&&['target_id','target_title','display_name','comment','date'].every(k=>typeof x[k]==='string')):[];form.hidden=false;renderReviews();}catch(_){form.hidden=true;$('review-list-status').textContent='Ulasan sementara tidak tersedia.';}}
+async function loadReviews(){reviews=[];form.hidden=true;$('review-list').replaceChildren();try{const r=await request('libraryReviews');if(!r.enabled){form.hidden=true;$('review-list-status').textContent='Ulasan belum dibuka.';return;}reviews=Array.isArray(r.items)?r.items.slice(0,60).filter(x=>x&&['target_id','target_title','display_name','comment','date'].every(k=>typeof x[k]==='string')):[];form.hidden=false;renderReviews();}catch(_){form.hidden=true;$('review-list-status').textContent='Ulasan sementara tidak tersedia.';}}
 async function load(){
  if(loading)return;loading=true;retry.hidden=true;network.textContent='Memuat koleksi tambahan…';
  try{
- const c=await fetch('config.json',{cache:'no-store',credentials:'omit'});if(!c.ok)throw Error('config');gas=String((await c.json()).gasUrl||'').trim();if(!endpoint(gas))throw Error('endpoint');
+ const configCtrl=new AbortController(),configTimer=setTimeout(()=>configCtrl.abort(),10000);let c;try{c=await fetch('config.json',{cache:'no-store',credentials:'omit',signal:configCtrl.signal});}finally{clearTimeout(configTimer);}if(!c.ok)throw Error('config');gas=String((await c.json()).gasUrl||'').trim();if(!endpoint(gas))throw Error('endpoint');
  const d=await request('publicLibrary');if(typeof d.enabled!=='boolean'||!Array.isArray(d.items))throw Error('schema');
  const unique=new Set([book.id]);items=[book];if(d.enabled)for(const i of d.items.slice(0,500)){if(i&&typeof i.id==='string'&&!unique.has(i.id)&&['title','category','format','summary','author','source_year'].every(k=>typeof i[k]==='string')&&safeURL(i.url)){unique.add(i.id);items.push({...i,featured:false});}}
  network.textContent=items.length>1?'Materi yang tersedia telah melalui kurasi.':'Koleksi lain sedang disiapkan. Buku pilihan sudah dapat dibaca.';
@@ -60,7 +60,7 @@ for(const [control,event] of [[search,'input'],[category,'change'],[format,'chan
  form.elements.comment.addEventListener('input',()=>{$('review-count').textContent=form.elements.comment.value.length+'/800';});
  form.addEventListener('submit',async e=>{
  e.preventDefault();if(form.hidden)return;const data=new FormData(form),b={target_id:String(data.get('target_id')),display_name:String(data.get('display_name')||''),rating:Number(data.get('rating')),comment:String(data.get('comment')),consent:data.get('consent')==='on',website:String(data.get('website')||'')};
- const serialized=JSON.stringify(b);if(serialized!==requestPayload){requestPayload=serialized;requestId=crypto.randomUUID();}
+ const serialized=JSON.stringify(b);if(serialized!==requestPayload){if(!globalThis.crypto?.randomUUID){reviewStatus.textContent='Browser belum mendukung pengiriman ulasan yang aman. Gunakan browser terbaru.';return;}requestPayload=serialized;requestId=crypto.randomUUID();}
  const btn=form.querySelector('button[type=submit]');btn.disabled=true;reviewStatus.textContent='Mengirim ulasan…';
  try{await request('libraryReviewSubmit',{...b,request_id:requestId,started_at:started});form.reset();$('review-count').textContent='0/800';requestPayload=requestId='';started=Date.now();reviewStatus.textContent='Terima kasih. Ulasan diterima dan akan ditinjau sebelum tampil.';}catch(error){reviewStatus.textContent=error.name==='AbortError'?'Respons terlalu lama. Coba kirim ulang tanpa mengubah isi.':String(error.message||'Ulasan belum terkirim.');}finally{btn.disabled=false;}
  });
