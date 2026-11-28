@@ -10,7 +10,7 @@ assert(publicHtml.includes('js/site-content.js'),'Public page must retain safe r
 assert(!publicHtml.includes('src="js/cms-editor.js"'),'Old popup editor must not run on public page');
 assert(!/adminModal|adminTrigger|cmsBridge|studio-admin\.html/.test(publicCMS),'Public page must not mount old admin controls');
 assert(!publicHtml.includes('adminTrigger'),'Public status is informational only');
-assert(!publicHtml.includes('ngulik-digital-member/'),'Unreleased project must not be linked from public hero');
+assert(publicHtml.includes('href="https://cuan74468-ux.github.io/ngulik-digital-member/">Ngulik Digital '),'Hero CTA must link to Ngulik Digital');
 assert(!adminHtml.includes('value="peyaje531@gmail.com"'),'Admin login must not prefill email');
 assert(publicCMS.includes("request('projects')")&&publicCMS.includes("request('lead'"),'Public CMS and inquiry form must remain functional');
 for(const id of ['loginScreen','workspace','sideNav','view-overview','view-pages','view-projects','view-leads','view-media','view-history','view-settings','detailDrawer','pagePreview']){
