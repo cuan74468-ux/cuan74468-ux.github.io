@@ -2,7 +2,7 @@ name: Ring direct navigation QA
 on:
   pull_request:
     branches: [main]
-    paths: ['js/ring-character.js','index.html','tests/ring-navigation.cjs','.github/workflows/ring-navigation.yml']
+    paths: ['js/ring-character.js','index.html','tests/ring-navigation.cjs','pustaka.html','css/pustaka.css','js/pustaka.js','tests/library-browser.cjs','.github/workflows/ring-navigation.yml']
 permissions:
   contents: read
 jobs:
@@ -22,3 +22,4 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/ring-server.log 2>&1 &
           for i in {1..20}; do curl -fsS http://127.0.0.1:8765/ > /dev/null && break; sleep 1; done
           node tests/ring-navigation.cjs
+          node tests/library-browser.cjs

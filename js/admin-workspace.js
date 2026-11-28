@@ -64,18 +64,19 @@ function loggedOut(message){
  if(message)setStatus($('#loginMessage'),message);
 }
 function setView(name){
- if(!['overview','pages','projects','leads','media','history','settings'].includes(name))return;
+ if(!['overview','pages','projects','leads','media','library-reviews','history','settings'].includes(name))return;
  if(!isLoggedIn()){loggedOut('Sesi admin berakhir. Silakan masuk kembali.');return;}
  if(state.dirty&&state.view==='pages'&&name!=='pages'&&!confirm('Ada perubahan halaman yang belum diterbitkan. Tetap berpindah menu?'))return;
  state.view=name;$$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
  $$('.nav-link').forEach(b=>b.classList.toggle('is-current',b.dataset.view===name));
- const titles={overview:'Ringkasan',pages:'Editor Halaman',projects:'Karya & Proyek',leads:'Inbox Pesan',media:'Media & Gambar',history:'Riwayat Publikasi',settings:'Pengaturan'};
+ const titles={overview:'Ringkasan',pages:'Editor Halaman',projects:'Karya & Proyek',leads:'Inbox Pesan',media:'Media & Gambar','library-reviews':'Ulasan Pustaka',history:'Riwayat Publikasi',settings:'Pengaturan'};
  setStatus($('#crumb'),titles[name]);$('#sidebar').classList.remove('open');
  if(name==='overview')loadOverview();
  if(name==='pages'){renderGroups();renderFields();window.STUDIO_CONTENT?.load();}
  if(name==='projects')refreshProjects();
  if(name==='leads')loadLeads();
  if(name==='media')window.STUDIO_MEDIA?.load();
+ if(name==='library-reviews')window.STUDIO_LIBRARY_REVIEWS?.load();
  if(name==='history')loadHistory();
  if(name==='settings')checkConnection(false);
 }

@@ -1,0 +1,17 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const props=new Map();let rows=[],reads=0;
+const sheet={getLastRow:()=>rows.length,getRange:(r,c,n,m)=>({getValues:()=>rows.slice(r-1,r-1+n).map(row=>row.slice(c-1,c-1+m))})};
+const ctx=vm.createContext({PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.get(k)})},SpreadsheetApp:{openById:()=>{reads++;return {getSheetByName:()=>sheet};}},ContentService:{MimeType:{JSON:'json'},createTextOutput:s=>({setMimeType:()=>JSON.parse(s)})}});
+vm.runInContext(fs.readFileSync('Code.gs','utf8'),ctx);
+const get=()=>ctx.doGet({parameter:{action:'publicLibrary'}});
+assert.deepEqual(get(),{ok:true,enabled:false,items:[]});assert.equal(reads,0);
+props.set('STUDIO_DB_ID','fake');props.set('STUDIO_PUBLIC_LIBRARY_ENABLED','TRUE');assert.equal(get().enabled,false);assert.equal(reads,0);
+props.set('STUDIO_PUBLIC_LIBRARY_ENABLED','true');
+const headers=vm.runInContext('LIBRARY_HEADERS',ctx);rows=[Array.from(headers)];
+const row=['test-book','Buku contoh','Teknologi','eBook','Contoh ringkasan','Penulis','2026','https://drive.google.com/file/d/TEST123/view','APPROVED','APPROVED','PUBLISHED','private-editor','2026-11-28T00:00:00Z','private-note'];
+const variant=(id,index,value)=>{const a=row.slice();a[0]=id;a[index]=value;return a;};
+rows.push(row,variant('draft-book',10,'DRAFT'),variant('rights-book',8,'REVIEW'),variant('privacy-book',9,'REVIEW'),variant('evil-book',7,'javascript:alert(1)'),variant('folder-book',7,'https://drive.google.com/drive/folders/private'),variant('query-book',7,'https://drive.google.com/file/d/TEST/view?secret=abc'),variant('no-approver',11,''),variant('no-date',12,''),variant('dup-book',1,'First duplicate'),variant('dup-book',1,'Second duplicate'));
+const result=get();assert.equal(result.enabled,true);assert.equal(result.items.length,1);assert.equal(result.items[0].id,'test-book');
+assert(!JSON.stringify(result).includes('private-note'));assert(!JSON.stringify(result).includes('private-editor'));assert(!JSON.stringify(result).includes('secret=abc'));
+rows[0]=['bad-header'];assert.equal(get().ok,false);
+console.log('Public library: fail-closed, eligibility, URL allowlist, duplicate IDs and projection PASS');

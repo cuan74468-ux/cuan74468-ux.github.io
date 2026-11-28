@@ -1,0 +1,43 @@
+const assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+const root='http://127.0.0.1:8765/pustaka.html',endpoint='https://script.google.com/macros/s/TEST_FIXTURE/exec';
+const fixtures=Array.from({length:15},(_,i)=>({id:'materi-'+i,title:'Latihan '+String(i).padStart(2,'0'),category:i%2?'Bisnis & UMKM':'Teknologi',format:'Materi',summary:'Latihan praktik yang bermanfaat untuk usaha.',author:'Tim contoh',source_year:'2025',url:'https://drive.google.com/file/d/TEST'+i+'/view'}));
+const approved={target_id:'dapur-vibe-coder',target_title:'Dapur Vibe Coder',display_name:'Pembaca',comment:'Sangat bermanfaat.',date:'2026-11-28',rating:5};
+(async()=>{const browser=await chromium.launch();try{for(const width of [1440,360]){
+ const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce',hasTouch:width===360,isMobile:width===360});
+ let fail=false,enabled=true,sent=[];
+ await context.route('**/config.json',route=>route.fulfill({json:{gasUrl:endpoint}}));
+ await context.route('https://cuan74468-ux.github.io/buku-pintar-vibe-coder/assets/web/cover.webp',route=>route.abort());
+ await context.route(endpoint+'**',async route=>{
+ const req=route.request(),headers={'access-control-allow-origin':'*'};
+ if(req.method()==='POST'){sent.push(req.postDataJSON());return route.fulfill({json:{ok:true,received:true},headers});}
+ const action=new URL(req.url()).searchParams.get('action');
+ if(action==='publicLibrary')return fail?route.fulfill({status:503,body:'offline',headers}):route.fulfill({json:{ok:true,enabled:true,items:[...fixtures,{...fixtures[0],id:'evil',title:'Invalid link',url:'javascript:alert(1)'}]},headers});
+ return route.fulfill({json:{ok:true,enabled,items:enabled?[approved]:[]},headers});
+ });
+ const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(root,{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>document.querySelector('#library-status').textContent.includes('16 materi'));
+ await page.locator('#review-form').waitFor({state:'visible'});
+ assert.equal(await page.locator('#library-items .library-card').count(),12);
+ assert.equal(await page.locator('#library-items a[href^="javascript:"]').count(),0);
+ assert.equal(await page.locator('#review-list .library-review-entry').count(),1);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'No horizontal overflow '+width);
+ await page.locator('#library-next').click();assert.equal(await page.locator('#library-items .library-card').count(),4);
+ await page.locator('#library-search').fill('Dapur Vibe Coder');assert.equal(await page.locator('#library-items .library-card').count(),1);
+ assert.match(await page.locator('#library-items a', {hasText:'PDF'}).getAttribute('href'),/Dapur_Vibe_Coder\.pdf$/);
+ await page.locator('#library-items .library-review-link').click();
+ assert.equal(await page.locator('#review-target').inputValue(),'dapur-vibe-coder');
+ await page.locator('#review-form textarea').fill('Terima kasih atas materi yang sangat bermanfaat.');
+ await page.locator('#review-form [name="consent"]').check();
+ await page.locator('#review-form button[type=submit]').click();
+ await page.waitForFunction(()=>document.querySelector('#review-status').textContent.includes('ditinjau'));
+ assert.equal(sent.length,1);assert.equal(sent[0].target_id,'dapur-vibe-coder');assert.equal(sent[0].rating,0);assert.equal(sent[0].consent,true);assert(!('email' in sent[0]));
+ assert.equal(await page.locator('#review-list .library-review-entry').count(),1,'Submission must not appear immediately');
+ await page.locator('#library-reset').click();await page.locator('#library-category').selectOption('Bisnis & UMKM');assert.equal(await page.locator('#library-items .library-card').count(),7);
+ await page.locator('#library-reset').click();await page.locator('#library-sort').selectOption('az');assert.equal(await page.locator('#library-items h3').first().textContent(),'Dapur Vibe Coder');
+ fail=true;enabled=false;await page.reload({waitUntil:'domcontentloaded'});await page.locator('#library-retry').waitFor({state:'visible'});
+ await page.waitForFunction(()=>document.querySelector('#review-list-status').textContent.includes('belum dibuka'));
+ assert.equal(await page.locator('#library-items .library-card').count(),1);assert.equal(await page.locator('#review-form').isVisible(),false);assert.equal(await page.locator('#review-list .library-review-entry').count(),0);assert.deepEqual(errors,[]);
+ console.log('PASS library browser search/filter/pagination, fallback, opt-in moderation and layout '+width);await context.close();
+ }}finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
