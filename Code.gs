@@ -1,9 +1,8 @@
 /** Linggau AI Studio. Paste into the NEW portfolio Sheet's bound Apps Script project. */
-const STUDIO_DB_ID = '1VOJV8zmSJXc3afnh6ly34_8Rguue5R2t4EXemjouYeM';
 const PROJECT_HEADERS = ['id','nama','kategori','peek_text','deskripsi','thumbnail','link','featured_ring'];
 const LEAD_HEADERS = ['id','nama','whatsapp','kebutuhan','pesan','tanggal'];
 const ADMIN_HEADERS = ['email','password','nama'];
-function database_(){return SpreadsheetApp.openById(STUDIO_DB_ID);}
+function database_(){const id=PropertiesService.getScriptProperties().getProperty('STUDIO_DB_ID');if(!id)throw Error('Database belum dikonfigurasi.');return SpreadsheetApp.openById(id);}
 function hex_(bytes){return bytes.map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('');}
 function digest_(s){return hex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(s),Utilities.Charset.UTF_8));}
 function pepper_(){const p=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');if(!p)throw Error('Jalankan setupDatabase terlebih dahulu.');return p;}
@@ -47,7 +46,8 @@ function setupDatabase(){
   const adm=sheet_('admin',ADMIN_HEADERS);
   if(adm.getLastRow()<2){
    const initial=props.getProperty('ADMIN_INITIAL_PASSWORD');if(!initial||initial.length<12)throw Error('Isi Script Property ADMIN_INITIAL_PASSWORD (minimal 12 karakter), lalu ulang setup.');
-   const salt=Utilities.getUuid();adm.appendRow(['peyaje531@gmail.com','pending$'+salt+'$'+digest_(salt+'\0'+initial),'Ferry (Founder)']);props.deleteProperty('ADMIN_INITIAL_PASSWORD');
+   const email=String(props.getProperty('ADMIN_INITIAL_EMAIL')||'').trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw Error('Isi Script Property ADMIN_INITIAL_EMAIL.');
+   const salt=Utilities.getUuid();adm.appendRow([email,'pending$'+salt+'$'+digest_(salt+'\0'+initial),'Admin']);props.deleteProperty('ADMIN_INITIAL_PASSWORD');props.deleteProperty('ADMIN_INITIAL_EMAIL');
   }
   rows_('admin',ADMIN_HEADERS).forEach((r,i)=>{
    const value=String(r[1]);if(value.startsWith('hmac-sha256$'))return;
@@ -461,6 +461,6 @@ function mediaUpload_(b){
 }
 
 /** Run in the editor after deployment. Copy the printed JSON into the repository's config.json. */
-function getFrontendConfig(){const url=ScriptApp.getService().getUrl();if(!url)throw Error('Deploy sebagai Web app terlebih dahulu.');console.log(JSON.stringify({gasUrl:url,spreadsheetUrl:database_().getUrl()},null,2));}
+function getFrontendConfig(){const url=ScriptApp.getService().getUrl();if(!url)throw Error('Deploy sebagai Web app terlebih dahulu.');console.log(JSON.stringify({gasUrl:url},null,2));}
 
 const DEFAULT_PROJECTS = [{"id": "umkm-pos", "nama": "POS Bakso Len Lite (Kasir Sederhana)", "kategori": "WebApp UMKM", "peek_text": "Demo aplikasi kasir sederhana untuk usaha kecil", "deskripsi": "Kenali POS Bakso Len Lite, aplikasi kasir sederhana untuk kebutuhan usaha kecil. Buka demo untuk melihat tampilan dan alur penggunaan.", "thumbnail": "assets/proyek-pos-sederhana.jpg", "link": "https://pos-sederhana-bakso-len.vercel.app/", "featured_ring": true}, {"id": "ai-photo", "nama": "AI Commercial Product Photography", "kategori": "AI Creative", "peek_text": "Visual Produk F&B & Kemasan UMKM Sekelas Studio Profesional", "deskripsi": "Mengubah foto produk UMKM sederhana dari kamera HP menjadi visual iklan komersial dramatis (seperti efek splash madu sinematik dan roti keju hangat) siap tayang untuk katalog digital dan media sosial.", "thumbnail": "assets/ai-photography-cover.svg", "link": "https://wa.me/6283160697880?text=Halo%20Bang%20Ferry,%20saya%20tertarik%20layanan%20Foto%20Produk%20AI", "featured_ring": true}, {"id": "kurir-juara", "nama": "Kurir Juara & Katalog Merchant", "kategori": "Logistik Lokal", "peek_text": "Platform Pengiriman Lokal, Katalog Kuliner, & Jastip Terintegrasi WA", "deskripsi": "Ekosistem katalog digital merchant lokal dan layanan pengantaran/jastip daerah yang memudahkan warga memesan produk UMKM langsung terhubung ke WhatsApp kurir dan toko.", "thumbnail": "assets/kurir-juara.jpg", "link": "https://wa.me/6283160697880?text=Halo%20Bang%20Ferry,%20mau%20tanya%20sistem%20Kurir%20Juara%20%26%20Katalog", "featured_ring": true}, {"id": "ebook-lms", "nama": "Ebook Vibe Coder & 1-Page LMS", "kategori": "Edukasi Digital", "peek_text": "Panduan Praktis Merakit WebApp Modern Tanpa Latar Belakang IT", "deskripsi": "Kurikulum belajar mandiri, Ebook Vibe Coder Otodidak, dan modul Komunitas Ngulik Digital untuk membantu pemilik usaha menguasai kolaborasi Multi-AI dan arsitektur aplikasi gratis.", "thumbnail": "assets/ebook-lms.jpg", "link": "https://cuan74468-ux.github.io/buku-pintar-vibe-coder/", "featured_ring": true}, {"id": "zero-cost-stack", "nama": "40+ Demo WebApp & Template GAS", "kategori": "Template WebApp", "peek_text": "Katalog Aplikasi Kasir, Absensi WA Fonnte, & Template Siap Duplikasi", "deskripsi": "Koleksi 40+ aplikasi web siap pakai dan 4 Blueprint Skill AI (GitHub Pages + GAS, Full GAS PWA, Supabase, Firebase) yang membebaskan UMKM dari tagihan server bulanan.", "thumbnail": "assets/proyek-smartlink.jpg", "link": "https://wa.me/6283160697880?text=Halo%20Bang%20Ferry,%20saya%20ingin%20lihat%2040%2B%20Demo%20WebApp%20%26%20Template", "featured_ring": true}];
