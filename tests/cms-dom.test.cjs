@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 const publicHtml=read('index.html'),adminHtml=read('studio-admin.html');
-const publicCMS=read('js/cms.js'),adminJS=read('js/admin-workspace.js'),editor=read('js/cms-editor.js'),schema=read('js/studio-schema.js'),renderer=read('js/site-content.js');
+const publicCMS=read('js/cms.js'),adminJS=read('js/admin-workspace.js'),schema=read('js/studio-schema.js'),renderer=read('js/site-content.js');
 assert(publicHtml.includes('js/studio-schema.js'),'Public page must load shared schema');
 assert(publicHtml.includes('js/site-content.js'),'Public page must retain safe renderer');
 assert(!publicHtml.includes('src="js/cms-editor.js"'),'Old popup editor must not run on public page');
@@ -27,8 +27,9 @@ assert(adminJS.includes("async function restoreHistory("),'History restore requi
 assert(adminJS.includes("async function archiveProject("),'Archiving required');
 assert(schema.includes('window.STUDIO_SCHEMA'),'Editor needs shared field definitions');
 assert(renderer.includes('window.STUDIO_SCHEMA'),'Public renderer must use the shared field schema');
-// Preserve a guard for the retired editor source while old popup code remains in the repository.
-assert(editor.indexOf("const logout=panel.querySelector('#logoutAdmin')")<editor.indexOf('[actions,projectList,projectForm].forEach'));
+assert(!fs.existsSync(path.join(root,'js/cms-editor.js')),'Retired editor must not be shipped');
+assert.deepEqual(Object.keys(JSON.parse(read('config.json'))),['gasUrl'],'Public config must contain only the public endpoint');
+assert(!adminHtml.includes('docs.google.com/spreadsheets/d/'),'Private database URL must not be in static admin HTML');
 const vm=require('node:vm');
 const scope={window:{}};vm.runInNewContext(schema,scope);
 const fields=scope.window.STUDIO_SCHEMA,keys=fields.map(f=>f.key);
