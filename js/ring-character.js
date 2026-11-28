@@ -10,9 +10,15 @@ const safeURL = (value, image=false) => {
   try { const u=new URL(value,document.baseURI); if(u.protocol==='https:' || (image && u.origin===location.origin && /^(assets\/|\.\/assets\/)/.test(value))) return u.href; } catch {}
   return image ? '' : 'https://wa.me/6283160697880';
 };
+// Ring links use the CMS destination directly. Invalid/missing targets never redirect to an unrelated service.
+const projectTarget = value => {
+  if(typeof value!=='string'||!/^https:\/\//i.test(value.trim()))return '';
+  try{const u=new URL(value.trim());return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';}catch{return '';}
+};
+const cardTarget = card => projectTarget(card.getAttribute('href'));
 let PROJECTS = DEFAULT_PROJECTS.map(p=>({...p,name:p.nama}));
 window.STUDIO={projects:PROJECTS,escapeHTML,safeURL};
-const cardHTML = p => `<a class="card" href="#case/${escapeHTML(p.id)}" data-id="${escapeHTML(p.id)}" aria-label="Lihat studi kasus ${escapeHTML(p.nama)}" draggable="false"><span class="in"><span class="project-type">${escapeHTML(p.kategori)}</span><span class="art" aria-hidden="true"><img src="${escapeHTML(safeURL(p.thumbnail,true))}" alt="" draggable="false" decoding="async"></span><span class="face"><span class="go" aria-hidden="true">↗</span><span class="name">${escapeHTML(p.nama)}</span></span></span></a>`;
+const cardHTML = p => `<a class="card" ${projectTarget(p.link)?`href="${escapeHTML(projectTarget(p.link))}"`:'aria-disabled="true"'} data-id="${escapeHTML(p.id)}" aria-label="${projectTarget(p.link)?'Buka ':'Tautan belum tersedia: '}${escapeHTML(p.nama)}" draggable="false"><span class="in"><span class="project-type">${escapeHTML(p.kategori)}</span><span class="art" aria-hidden="true"><img src="${escapeHTML(safeURL(p.thumbnail,true))}" alt="" draggable="false" decoding="async"></span><span class="face"><span class="go" aria-hidden="true">↗</span><span class="name">${escapeHTML(p.nama)}</span></span></span></a>`;
 function bindImageFallback(el){ el.querySelectorAll('img').forEach(img=>img.addEventListener('error',()=>{ const note=document.createElement('span');note.className='image-note';note.textContent='Visual karya segera diperbarui';img.replaceWith(note); },{once:true})); }
 
 /* ================= RING ================= */
@@ -59,35 +65,38 @@ function ringTick(now){
 }
 let ringSleeping = false;
 // drag
-let px = 0, moved = 0, lastMoveT = 0;
-let pressedCard = null;
+let px = 0, py = 0, moved = 0, lastMoveT = 0;
+let pressedCard = null, pressedTarget = '', pressedId = '', activePointer = null;
+const modified = e => e.ctrlKey || e.metaKey || e.shiftKey || e.altKey;
 ring.addEventListener('pointerdown', e => {
-  if (e.button !== 0) return;
+  if (e.button !== 0 || modified(e) || dragging) return;
+  activePointer=e.pointerId;
   pressedCard = e.target.closest('.card');           // remember exactly what was pressed
   if (pressedCard && e.pointerType !== 'touch') e.preventDefault(); // no focus on press, so the card stays put
-  dragging = true; moved = 0; px = e.clientX; lastMoveT = performance.now(); vel = 0;
+  pressedTarget=pressedCard?cardTarget(pressedCard):'';pressedId=pressedCard?.dataset.id||'';
+  dragging = true; moved = 0; px = e.clientX; py=e.clientY; lastMoveT = performance.now(); vel = 0;
   ring.setPointerCapture(e.pointerId); ring.classList.add('dragging');
 });
 ring.addEventListener('pointermove', e => {
-  if (!dragging) return;
-  const dx = e.clientX - px; px = e.clientX; moved += Math.abs(dx);
+  if (!dragging || e.pointerId!==activePointer) return;
+  const dx = e.clientX - px, dy=e.clientY-py; px = e.clientX; py=e.clientY; moved += Math.hypot(dx,dy);
   const deg = dx * (90 / ring.clientWidth) * 1.1;
   rot += deg;
   const now = performance.now(); const dt = Math.max(.008, (now - lastMoveT) / 1000); lastMoveT = now;
   vel = vel * .6 + (deg / dt) * .4;
 });
 const endDrag = e => {
-  if (!dragging) return; dragging = false; ring.classList.remove('dragging');
+  if (!dragging || e.pointerId!==activePointer) return; dragging = false; ring.classList.remove('dragging');
   vel = Math.max(-260, Math.min(260, vel));
-  if (moved < 8 && pressedCard){
-    vel = 0;                                         // freeze the ring on a tap
-    openCase(pressedCard.dataset.id, true);
-  }
-  pressedCard = null;
+  const target=pressedCard&&pressedCard.dataset.id===pressedId&&cardTarget(pressedCard)===pressedTarget?pressedTarget:'';
+  const travel=moved+Math.hypot(e.clientX-px,e.clientY-py);
+  pressedCard=null;pressedTarget='';pressedId='';activePointer=null;
+  if(travel<8&&target&&!modified(e)){vel=0;window.location.assign(target);}
 };
 ring.addEventListener('pointerup', endDrag);
-ring.addEventListener('pointercancel', () => { dragging = false; pressedCard = null; ring.classList.remove('dragging'); });
-inner.addEventListener('click', e => { const c = e.target.closest('.card'); if (c){ e.preventDefault(); if (e.detail === 0) openCase(c.dataset.id, true); }});
+ring.addEventListener('pointercancel', e => { if(e.pointerId!==activePointer)return; dragging = false; pressedCard = null; pressedTarget=''; pressedId=''; activePointer=null; ring.classList.remove('dragging'); });
+// Pointer taps navigate once via endDrag. Keyboard activation and modifier-click retain native anchor behavior.
+inner.addEventListener('click', e => { const c = e.target.closest('.card'); if(c&&(!cardTarget(c)||(e.detail!==0&&!modified(e))))e.preventDefault(); });
 inner.addEventListener('pointerover', e => { if (e.target.closest('.card') && e.pointerType === 'mouse'){ hover = true; vel = 0; } });
 inner.addEventListener('pointerout', e => { if (!e.relatedTarget || !e.relatedTarget.closest?.('.card')) hover = false; });
 cards.forEach((c,i) => c.addEventListener('focus', () => { // keyboard (Tab) only: bring focused card to front
@@ -161,7 +170,8 @@ window.STUDIO.updateProjects = rows => {
   for(const p of [...featured,...clean]){ CASE[p.id]={...p,bg:'#fafafc'};PEEK[p.id]={c:'#5b49ff',t:p.peek_text}; }
   cards.forEach((card,i)=>{
     const p=PROJECTS[i%5],t=document.createElement('template');t.innerHTML=cardHTML(p);const replacement=t.content.firstElementChild;
-    card.dataset.id=p.id;card.href='#case/'+p.id;card.setAttribute('aria-label',replacement.getAttribute('aria-label'));
+    card.dataset.id=p.id;
+    for(const attr of ['href','aria-disabled','aria-label']){if(replacement.hasAttribute(attr))card.setAttribute(attr,replacement.getAttribute(attr));else card.removeAttribute(attr);}
     card.replaceChildren(...replacement.childNodes);bindImageFallback(card);
   });
   dispatchEvent(new CustomEvent('studio:projects'));
