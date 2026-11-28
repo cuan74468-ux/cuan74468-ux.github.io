@@ -38,6 +38,7 @@
       <button type="button" data-view="projects" class="nav-link"><span class="nav-icon">▣</span> Karya & Proyek</button>
       <button type="button" data-view="leads" class="nav-link"><span class="nav-icon">✉</span> Inbox Pesan <span id="unreadCount" class="nav-counter" hidden></span></button>
       <button type="button" data-view="media" class="nav-link"><span class="nav-icon">◈</span> Media & Gambar</button>
+      <button type="button" data-view="library-reviews" class="nav-link"><span class="nav-icon">✎</span> Ulasan Pustaka</button>
       <button type="button" data-view="history" class="nav-link"><span class="nav-icon">◷</span> Riwayat Publikasi</button>
       <button type="button" data-view="settings" class="nav-link"><span class="nav-icon">⚙</span> Pengaturan</button>
     </nav>
@@ -107,6 +108,7 @@
           </div>
         </section>
       </section>
+      <section id="view-library-reviews" class="view" aria-labelledby="libraryReviewTitle"><div class="page-heading"><div><p class="eyebrow">PUSTAKA DIGITAL</p><h1 id="libraryReviewTitle">Moderasi ulasan pembaca</h1><p>Ulasan sukarela ditahan sampai ditinjau. Jangan setujui spam atau data pribadi.</p></div><button type="button" class="button secondary" id="reviewAdminRefresh">Muat ulang</button></div><article class="surface"><label>Status <select id="reviewAdminFilter"><option value="PENDING">Menunggu</option><option value="APPROVED">Tayang</option><option value="HIDDEN">Disembunyikan</option><option value="REJECTED">Ditolak</option><option value="ALL">Semua</option></select></label><p id="reviewAdminStatus" aria-live="polite" class="muted"></p><div id="reviewAdminList"></div><div class="head-actions"><button type="button" class="button secondary" id="reviewAdminPrev">Sebelumnya</button><span id="reviewAdminPage"></span><button type="button" class="button secondary" id="reviewAdminNext">Berikutnya</button></div></article></section>
       <section id="view-history" class="view" aria-labelledby="historyTitle">
         <div class="page-heading"><div><p class="eyebrow">CONTENT HISTORY</p><h1 id="historyTitle">Riwayat publikasi</h1><p>Catatan perubahan konten. Pemulihan membutuhkan konfirmasi dan menyimpan versi sebelum pemulihan.</p></div><button id="refreshHistory" type="button" class="button secondary">↻ Muat ulang</button></div><div class="surface list-surface"><div class="table-scroll"><table class="data-table"><thead><tr><th>Waktu publikasi</th><th>Editor</th><th>ID versi</th><th>Tindakan</th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyPager" class="pagination"></div></div>
       </section>
@@ -141,4 +143,5 @@
 <script src="js/admin-workspace.js?v=20261112-assets-diagnostic-v2"></script>
 <script src="js/media-manager.js?v=20261127-video-preview"></script>
 <script src="js/content-manager.js?v=20261112-content-v4"></script>
+<script src="js/library-reviews-admin.js?v=20261128-v2"></script>
 </body></html>

@@ -59,7 +59,7 @@ function setupDatabase(){
  }finally{lock.releaseLock();}
 }
 function health_(){let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5&&!!database_().getSheetByName('site_content');}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:4,features:['mediaLibrary','mediaExternalUrl','mediaUploadGitHub','mediaArchive','mediaRestore','contentBlocks','contentDraftPublish'],ready:ready});}
-function doGet(e){try{const action=(e&&e.parameter&&e.parameter.action)||'projects';if(action==='projects')return json_(publicData_());if(action==='health')return health_();if(action==='publicLibrary')return json_(publicLibrary_());return json_({ok:false,error:'Aksi tidak tersedia.'});}catch(err){return json_({ok:false,error:'Database belum siap. Jalankan setupDatabase.'});}}
+function doGet(e){try{const action=(e&&e.parameter&&e.parameter.action)||'projects';if(action==='projects')return json_(publicData_());if(action==='health')return health_();if(action==='publicLibrary')return json_(publicLibrary_());if(action==='libraryReviews')return json_(libraryReviewsPublic_());return json_({ok:false,error:'Aksi tidak tersedia.'});}catch(err){return json_({ok:false,error:'Database belum siap. Jalankan setupDatabase.'});}}
 function session_(token){if(typeof token!=='string'||token.length>200)throw Error('Sesi berakhir. Login kembali.');const s=CacheService.getScriptCache().get('session:'+digest_(token));if(!s)throw Error('Sesi berakhir. Login kembali.');return JSON.parse(s);}
 function login_(b){
  const props=PropertiesService.getScriptProperties(),now=Date.now();
@@ -165,7 +165,7 @@ function doPost(e){
  try{
   if(!e||!e.postData||e.postData.contents.length>1450000)throw Error('Permintaan terlalu besar.');const b=JSON.parse(e.postData.contents);if(b.action!=='mediaUpload'&&e.postData.contents.length>100000)throw Error('Permintaan tidak valid.');
   lock=LockService.getScriptLock();lock.waitLock(15000);let result;
-  switch(b.action){case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'workspaceOverview':result=workspaceOverview_(b);break;case 'workspaceLeads':result=workspaceLeads_(b);break;case 'workspaceSaveLead':result=workspaceSaveLead_(b);break;case 'workspaceArchiveProject':result=workspaceArchiveProject_(b);break;case 'workspaceArchivedProjects':result=workspaceArchivedProjects_(b);break;case 'workspaceRestoreProject':result=workspaceRestoreProject_(b);break;case 'workspaceHistory':result=workspaceHistory_(b);break;case 'workspaceRestoreHistory':result=workspaceRestoreHistory_(b);break;case 'mediaList':result=mediaList_(b);break;case 'mediaSave':result=mediaSave_(b);break;case 'mediaArchive':result=mediaArchive_(b);break;case 'mediaRestore':result=mediaRestore_(b);break;case 'mediaUpload':result=mediaUpload_(b);break;case 'contentList':result=contentList_(b);break;case 'contentSave':result=contentSave_(b);break;case 'contentArchive':result=contentArchive_(b);break;case 'contentRestore':result=contentRestore_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
+  switch(b.action){case 'libraryReviewSubmit':result=libraryReviewSubmit_(b);break;case 'libraryReviewList':result=libraryReviewList_(b);break;case 'libraryReviewModerate':result=libraryReviewModerate_(b);break;case 'login':result=login_(b);break;case 'saveProject':result=saveProject_(b);break;case 'workspaceOverview':result=workspaceOverview_(b);break;case 'workspaceLeads':result=workspaceLeads_(b);break;case 'workspaceSaveLead':result=workspaceSaveLead_(b);break;case 'workspaceArchiveProject':result=workspaceArchiveProject_(b);break;case 'workspaceArchivedProjects':result=workspaceArchivedProjects_(b);break;case 'workspaceRestoreProject':result=workspaceRestoreProject_(b);break;case 'workspaceHistory':result=workspaceHistory_(b);break;case 'workspaceRestoreHistory':result=workspaceRestoreHistory_(b);break;case 'mediaList':result=mediaList_(b);break;case 'mediaSave':result=mediaSave_(b);break;case 'mediaArchive':result=mediaArchive_(b);break;case 'mediaRestore':result=mediaRestore_(b);break;case 'mediaUpload':result=mediaUpload_(b);break;case 'contentList':result=contentList_(b);break;case 'contentSave':result=contentSave_(b);break;case 'contentArchive':result=contentArchive_(b);break;case 'contentRestore':result=contentRestore_(b);break;case 'saveSite':result=saveSite_(b);break;case 'revertSite':result=revertSite_(b);break;case 'lead':result=lead_(b);break;case 'logout':session_(b.token);CacheService.getScriptCache().remove('session:'+digest_(b.token));result={ok:true};break;default:throw Error('Aksi tidak tersedia.');}
   return json_(result);
  }catch(err){return json_({ok:false,error:String(err.message||'Permintaan gagal.').slice(0,200)});}finally{if(lock)lock.releaseLock();}
 }
@@ -505,4 +505,85 @@ function publicLibrary_(){
  const sh=sheet_('public_library',LIBRARY_HEADERS);
  if(sh.getLastRow()>501)throw Error('Katalog melebihi batas.');
  return {ok:true,enabled:true,items:libraryPublishedRows_(rows_('public_library',LIBRARY_HEADERS))};
+}
+
+/** Moderated, optional library feedback. No email, IP or device fingerprint collected. */
+const REVIEW_HEADERS=['id','target_id','display_name','rating','comment','created_at','status','updated_at','moderator','request_digest'];
+const REVIEW_LIMIT=2000,REVIEW_DAILY_LIMIT=25;
+function libraryReviewsEnabled_(){return PropertiesService.getScriptProperties().getProperty('STUDIO_LIBRARY_REVIEWS_ENABLED')==='true';}
+function setupLibraryReviews(){
+ const lock=LockService.getScriptLock();lock.waitLock(20000);
+ try{
+  const db=database_(),props=PropertiesService.getScriptProperties();let sh=db.getSheetByName('library_reviews');
+  if(!sh)sh=db.insertSheet('library_reviews');
+  if(sh.getLastRow()===0)sh.getRange(1,1,1,REVIEW_HEADERS.length).setValues([REVIEW_HEADERS]);
+  sheet_('library_reviews',REVIEW_HEADERS);sh.setFrozenRows(1);
+  sh.getRange(1,1,1,REVIEW_HEADERS.length).setBackground('#eeeeee').setFontWeight('bold');
+  if(!props.getProperty('STUDIO_LIBRARY_REVIEWS_ENABLED'))props.setProperty('STUDIO_LIBRARY_REVIEWS_ENABLED','false');
+  SpreadsheetApp.flush();return {ok:true,enabled:libraryReviewsEnabled_()};
+ }finally{lock.releaseLock();}
+}
+function libraryReviewTargets_(){
+ const targets=new Map([['general','Pustaka Digital'],['dapur-vibe-coder','Dapur Vibe Coder']]);
+ const data=publicLibrary_();
+ for(const item of data.items)if(!targets.has(item.id))targets.set(item.id,item.title);
+ return targets;
+}
+function libraryReviewRows_(){
+ const sh=sheet_('library_reviews',REVIEW_HEADERS);
+ if(sh.getLastRow()>REVIEW_LIMIT+1)throw Error('Kapasitas ulasan penuh.');
+ return rows_('library_reviews',REVIEW_HEADERS).filter(r=>r[0]);
+}
+function reviewText_(raw,max,min){
+ if(typeof raw!=='string')throw Error('Isi ulasan tidak valid.');
+ const s=raw.trim();
+ if(s.length<min||s.length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(s)||/^[=+@-]/.test(s)||/https?:|www\.|(?:[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})|(?:\+?\d[\d ()-]{7,}\d)/i.test(s))throw Error('Gunakan teks biasa tanpa tautan, email, nomor kontak, atau formula.');
+ return s;
+}
+function libraryReviewsPublic_(){
+ if(!libraryReviewsEnabled_())return {ok:true,enabled:false,items:[]};
+ const targets=libraryReviewTargets_();
+ const items=libraryReviewRows_().filter(r=>r[6]==='APPROVED'&&targets.has(String(r[1]))).reverse().slice(0,60)
+ .map(r=>({target_id:String(r[1]),target_title:targets.get(String(r[1])),display_name:String(r[2]),rating:Number(r[3])||0,comment:String(r[4]),date:String(r[5]).slice(0,10)}));
+ return {ok:true,enabled:true,items};
+}
+function libraryReviewSubmit_(b){
+ if(!libraryReviewsEnabled_())throw Error('Ulasan belum dibuka.');
+ if(b.consent!==true||b.website)throw Error('Persetujuan diperlukan.');
+ const requestId=text_(b.request_id,36,36,'ID ulasan');
+ if(!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(requestId))throw Error('ID ulasan tidak valid.');
+ const target=String(b.target_id||'');
+ if(!libraryReviewTargets_().has(target))throw Error('Materi tidak tersedia.');
+ const name=reviewText_(b.display_name||'Pembaca',40,1),comment=reviewText_(b.comment,800,10);
+ const rating=b.rating===0?0:b.rating;
+ if(!Number.isInteger(rating)||rating<0||rating>5)throw Error('Rating tidak valid.');
+ const all=libraryReviewRows_(),key=digest_(JSON.stringify([target,name,rating,comment])),prior=all.find(r=>String(r[0])===requestId);
+ if(prior){if(String(prior[9])!==key)throw Error('ID ulasan sudah digunakan.');return {ok:true,received:true};}
+ const now=Date.now();
+ if(!Number.isFinite(b.started_at)||now-b.started_at<2500||now-b.started_at>86400000)throw Error('Muat ulang formulir dan coba lagi.');
+ if(all.length>=REVIEW_LIMIT)throw Error('Kapasitas ulasan penuh.');
+ const recent=all.filter(r=>{const t=Date.parse(String(r[5]));return Number.isFinite(t)&&t>now-86400000;});
+ if(recent.length>=REVIEW_DAILY_LIMIT)throw Error('Kuota ulasan hari ini penuh. Coba kembali besok.');
+ if(recent.some(r=>String(r[9])===key))return {ok:true,received:true};
+ const stamp=new Date(now).toISOString();
+ sheet_('library_reviews',REVIEW_HEADERS).appendRow([requestId,target,literal_(name),rating,literal_(comment),stamp,'PENDING',stamp,'',key]);
+ SpreadsheetApp.flush();return {ok:true,received:true};
+}
+function libraryReviewList_(b){
+ session_(b.token);const state=['PENDING','APPROVED','REJECTED','HIDDEN','ALL'].includes(b.status)?b.status:'PENDING';
+ const all=libraryReviewRows_().filter(r=>state==='ALL'||r[6]===state).reverse();
+ const page=Math.max(1,Math.min(Math.max(1,Math.ceil(all.length/20)),parseInt(b.page,10)||1));
+ const items=all.slice((page-1)*20,page*20).map(r=>({id:String(r[0]),target_id:String(r[1]),display_name:String(r[2]),rating:Number(r[3])||0,comment:String(r[4]),created_at:String(r[5]),status:String(r[6]),updated_at:String(r[7])}));
+ return {ok:true,enabled:libraryReviewsEnabled_(),items,total:all.length,page,pages:Math.max(1,Math.ceil(all.length/20))};
+}
+function libraryReviewModerate_(b){
+ const actor=session_(b.token);const id=text_(b.id,36,36,'ID ulasan'),sh=sheet_('library_reviews',REVIEW_HEADERS),all=rows_('library_reviews',REVIEW_HEADERS);
+ const idx=all.findIndex(r=>String(r[0])===id);if(idx<0)throw Error('Ulasan tidak ditemukan.');
+ const row=all[idx],next=b.status;
+ if(String(row[7])!==b.expectedUpdatedAt)throw Error('Ulasan telah berubah. Muat ulang.');
+ const transitions={PENDING:['APPROVED','REJECTED'],APPROVED:['HIDDEN'],HIDDEN:['APPROVED','REJECTED'],REJECTED:[]};
+ if(!(transitions[row[6]]||[]).includes(next))throw Error('Perubahan status tidak diizinkan.');
+ if(next==='APPROVED'&&!libraryReviewTargets_().has(String(row[1])))throw Error('Materi sudah tidak tersedia.');
+ const stamp=new Date().toISOString();sh.getRange(idx+2,7,1,3).setValues([[next,stamp,literal_(String(actor.email||'admin'))]]);
+ SpreadsheetApp.flush();return {ok:true,id,status:next};
 }
