@@ -8,7 +8,11 @@ const publicCMS=read('js/cms.js'),adminJS=read('js/admin-workspace.js'),editor=r
 assert(publicHtml.includes('js/studio-schema.js'),'Public page must load shared schema');
 assert(publicHtml.includes('js/site-content.js'),'Public page must retain safe renderer');
 assert(!publicHtml.includes('src="js/cms-editor.js"'),'Old popup editor must not run on public page');
-assert(publicCMS.includes("window.location.assign('studio-admin.html')"),'Old CMS entry must route to workspace');
+assert(!/adminModal|adminTrigger|cmsBridge|studio-admin\.html/.test(publicCMS),'Public page must not mount old admin controls');
+assert(!publicHtml.includes('adminTrigger'),'Public status is informational only');
+assert(!publicHtml.includes('ngulik-digital-member/'),'Unreleased project must not be linked from public hero');
+assert(!adminHtml.includes('value="peyaje531@gmail.com"'),'Admin login must not prefill email');
+assert(publicCMS.includes("request('projects')")&&publicCMS.includes("request('lead'"),'Public CMS and inquiry form must remain functional');
 for(const id of ['loginScreen','workspace','sideNav','view-overview','view-pages','view-projects','view-leads','view-media','view-history','view-settings','detailDrawer','pagePreview']){
  assert(adminHtml.includes('id="'+id+'"'),'Workspace element missing: '+id);
 }
