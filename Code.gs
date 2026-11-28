@@ -59,7 +59,7 @@ function setupDatabase(){
  }finally{lock.releaseLock();}
 }
 function health_(){let ready=false;try{const pepper=PropertiesService.getScriptProperties().getProperty('ADMIN_PEPPER');const admins=rows_('admin',ADMIN_HEADERS);ready=!!pepper&&admins.some(r=>/^hmac-sha256\$[a-f0-9-]+\$[a-f0-9]{64}$/.test(String(r[1]||'')))&&projects_().length>=5&&!!database_().getSheetByName('site_content');}catch(_){ready=false;}return json_({ok:true,service:'Linggau AI Studio',version:4,features:['mediaLibrary','mediaExternalUrl','mediaUploadGitHub','mediaArchive','mediaRestore','contentBlocks','contentDraftPublish'],ready:ready});}
-function doGet(e){try{const action=(e&&e.parameter&&e.parameter.action)||'projects';if(action==='projects')return json_(publicData_());if(action==='health')return health_();return json_({ok:false,error:'Aksi tidak tersedia.'});}catch(err){return json_({ok:false,error:'Database belum siap. Jalankan setupDatabase.'});}}
+function doGet(e){try{const action=(e&&e.parameter&&e.parameter.action)||'projects';if(action==='projects')return json_(publicData_());if(action==='health')return health_();if(action==='publicLibrary')return json_(publicLibrary_());return json_({ok:false,error:'Aksi tidak tersedia.'});}catch(err){return json_({ok:false,error:'Database belum siap. Jalankan setupDatabase.'});}}
 function session_(token){if(typeof token!=='string'||token.length>200)throw Error('Sesi berakhir. Login kembali.');const s=CacheService.getScriptCache().get('session:'+digest_(token));if(!s)throw Error('Sesi berakhir. Login kembali.');return JSON.parse(s);}
 function login_(b){
  const props=PropertiesService.getScriptProperties(),now=Date.now();
@@ -464,3 +464,45 @@ function mediaUpload_(b){
 function getFrontendConfig(){const url=ScriptApp.getService().getUrl();if(!url)throw Error('Deploy sebagai Web app terlebih dahulu.');console.log(JSON.stringify({gasUrl:url},null,2));}
 
 const DEFAULT_PROJECTS = [{"id": "umkm-pos", "nama": "POS Bakso Len Lite (Kasir Sederhana)", "kategori": "WebApp UMKM", "peek_text": "Demo aplikasi kasir sederhana untuk usaha kecil", "deskripsi": "Kenali POS Bakso Len Lite, aplikasi kasir sederhana untuk kebutuhan usaha kecil. Buka demo untuk melihat tampilan dan alur penggunaan.", "thumbnail": "assets/proyek-pos-sederhana.jpg", "link": "https://pos-sederhana-bakso-len.vercel.app/", "featured_ring": true}, {"id": "ai-photo", "nama": "AI Commercial Product Photography", "kategori": "AI Creative", "peek_text": "Visual Produk F&B & Kemasan UMKM Sekelas Studio Profesional", "deskripsi": "Mengubah foto produk UMKM sederhana dari kamera HP menjadi visual iklan komersial dramatis (seperti efek splash madu sinematik dan roti keju hangat) siap tayang untuk katalog digital dan media sosial.", "thumbnail": "assets/ai-photography-cover.svg", "link": "https://wa.me/6283160697880?text=Halo%20Bang%20Ferry,%20saya%20tertarik%20layanan%20Foto%20Produk%20AI", "featured_ring": true}, {"id": "kurir-juara", "nama": "Kurir Juara & Katalog Merchant", "kategori": "Logistik Lokal", "peek_text": "Platform Pengiriman Lokal, Katalog Kuliner, & Jastip Terintegrasi WA", "deskripsi": "Ekosistem katalog digital merchant lokal dan layanan pengantaran/jastip daerah yang memudahkan warga memesan produk UMKM langsung terhubung ke WhatsApp kurir dan toko.", "thumbnail": "assets/kurir-juara.jpg", "link": "https://wa.me/6283160697880?text=Halo%20Bang%20Ferry,%20mau%20tanya%20sistem%20Kurir%20Juara%20%26%20Katalog", "featured_ring": true}, {"id": "ebook-lms", "nama": "Ebook Vibe Coder & 1-Page LMS", "kategori": "Edukasi Digital", "peek_text": "Panduan Praktis Merakit WebApp Modern Tanpa Latar Belakang IT", "deskripsi": "Kurikulum belajar mandiri, Ebook Vibe Coder Otodidak, dan modul Komunitas Ngulik Digital untuk membantu pemilik usaha menguasai kolaborasi Multi-AI dan arsitektur aplikasi gratis.", "thumbnail": "assets/ebook-lms.jpg", "link": "https://cuan74468-ux.github.io/buku-pintar-vibe-coder/", "featured_ring": true}, {"id": "zero-cost-stack", "nama": "40+ Demo WebApp & Template GAS", "kategori": "Template WebApp", "peek_text": "Katalog Aplikasi Kasir, Absensi WA Fonnte, & Template Siap Duplikasi", "deskripsi": "Koleksi 40+ aplikasi web siap pakai dan 4 Blueprint Skill AI (GitHub Pages + GAS, Full GAS PWA, Supabase, Firebase) yang membebaskan UMKM dari tagihan server bulanan.", "thumbnail": "assets/proyek-smartlink.jpg", "link": "https://wa.me/6283160697880?text=Halo%20Bang%20Ferry,%20saya%20ingin%20lihat%2040%2B%20Demo%20WebApp%20%26%20Template", "featured_ring": true}];
+
+/** Public library: separate from admin media and private source bank. Explicit opt-in only. */
+const LIBRARY_HEADERS=['id','title','category','format','summary','author','source_year','public_url','rights_status','privacy_status','status','approved_by','approved_at','internal_note'];
+const LIBRARY_CATEGORIES=['Bisnis & UMKM','Digital Marketing','AI & Kreatif','Teknologi','Template & Workbook','Karya & Audio'];
+const LIBRARY_FORMATS=['eBook','Materi','Template','Video','Audio','Artikel'];
+function setupPublicLibrary(){
+ const lock=LockService.getScriptLock();lock.waitLock(20000);
+ try{
+  const db=database_(),props=PropertiesService.getScriptProperties();
+  let sh=db.getSheetByName('public_library');
+  if(!sh)sh=db.insertSheet('public_library');
+  if(sh.getLastRow()===0)sh.getRange(1,1,1,LIBRARY_HEADERS.length).setValues([LIBRARY_HEADERS]);
+  sheet_('public_library',LIBRARY_HEADERS);
+  sh.setFrozenRows(1);sh.getRange(1,1,1,LIBRARY_HEADERS.length).setBackground('#eeeeee').setFontWeight('bold');
+  if(!props.getProperty('STUDIO_PUBLIC_LIBRARY_ENABLED'))props.setProperty('STUDIO_PUBLIC_LIBRARY_ENABLED','false');
+  SpreadsheetApp.flush();return {ok:true,enabled:props.getProperty('STUDIO_PUBLIC_LIBRARY_ENABLED')==='true'};
+ }finally{lock.releaseLock();}
+}
+function librarySafeURL_(value){
+ const s=String(value||'');
+ // No folders, query strings, credentials, redirects, arbitrary hosts or executable schemes.
+ return /^(?:https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]+\/view|https:\/\/docs\.google\.com\/(?:document|spreadsheets|presentation)\/d\/[A-Za-z0-9_-]+\/(?:view|edit)|https:\/\/github\.com\/cuan74468-ux\/[A-Za-z0-9_-]+\/releases\/(?:tag\/[A-Za-z0-9._-]+|download\/[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+))$/.test(s)?s:'';
+}
+function libraryPublishedRows_(rows){
+ const ids=new Map();
+ rows.forEach(r=>{const id=String(r[0]||'');ids.set(id,(ids.get(id)||0)+1);});
+ return rows.flatMap(r=>{
+  const [rawId,title,category,format,summary,author,sourceYear,url,rights,privacy,status,approvedBy,approvedAt]=r;
+  const id=String(rawId||''),year=String(sourceYear||''),safe=librarySafeURL_(url);
+  const validText=(v,min,max)=>typeof v==='string'&&v.trim().length>=min&&v.length<=max;
+  if(ids.get(id)!==1||!/^[a-z0-9][a-z0-9-]{1,59}$/.test(id)||rights!=='APPROVED'||privacy!=='APPROVED'||status!=='PUBLISHED'||!validText(approvedBy,1,120)||!Number.isFinite(Date.parse(String(approvedAt)))||!safe||!LIBRARY_CATEGORIES.includes(category)||!LIBRARY_FORMATS.includes(format)||!validText(title,2,160)||!validText(summary,3,600)||!validText(author,1,160)||!/^(?:19|20)\d{2}$/.test(year))return [];
+  // Explicit allowlist. Never return approval actor, notes, source links or whole sheet rows.
+  return [{id,title,category,format,summary,author,source_year:year,url:safe}];
+ }).sort((a,b)=>b.source_year.localeCompare(a.source_year)||a.title.localeCompare(b.title));
+}
+function publicLibrary_(){
+ const enabled=PropertiesService.getScriptProperties().getProperty('STUDIO_PUBLIC_LIBRARY_ENABLED')==='true';
+ if(!enabled)return {ok:true,enabled:false,items:[]};
+ const sh=sheet_('public_library',LIBRARY_HEADERS);
+ if(sh.getLastRow()>501)throw Error('Katalog melebihi batas.');
+ return {ok:true,enabled:true,items:libraryPublishedRows_(rows_('public_library',LIBRARY_HEADERS))};
+}

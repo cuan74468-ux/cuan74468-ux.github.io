@@ -29,7 +29,9 @@ jobs:
           node --check < AdminRecovery.gs
           for file in js/*.js; do node --check "$file"; done
       - name: Verify backend in isolated mock environment
-        run: node tests/backend.test.cjs
+        run: |
+          node tests/backend.test.cjs
+          node tests/public-library.test.cjs
       - name: Verify CMS DOM lifecycle regressions
         run: node tests/cms-dom.test.cjs
       - name: Verify direct active-media replacement and backwards compatibility
